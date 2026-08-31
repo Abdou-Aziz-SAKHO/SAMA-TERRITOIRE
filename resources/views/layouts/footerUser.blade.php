@@ -1,66 +1,62 @@
- <footer>
-         <div class="container">
-            <div class="row g-5">
-               <div class="col-lg-4">
-                  <div class="fnm">Sar<span>ab</span></div>
-                  <p class="fdesc">We bring the world's finest flavors together in a fast, friendly, and affordable experience. Every meal crafted with love.</p>
-                  <div class="fsoc">
-                     <a href="#"><i class="fab fa-facebook-f"></i></a>
-                     <a href="#"><i class="fab fa-instagram"></i></a>
-                     <a href="#"><i class="fab fa-twitter"></i></a>
-                     <a href="#"><i class="fab fa-youtube"></i></a>
-                     <a href="#"><i class="fab fa-tiktok"></i></a>
-                  </div>
-               </div>
-               <div class="col-sm-6 col-lg-2">
-                  <div class="ftit">Quick Links</div>
-                  <ul class="flinks ps-0">
-                     <li><a href="#hero"><i class="fas fa-chevron-right"></i>Home</a></li>
-                     <li><a href="#about"><i class="fas fa-chevron-right"></i>About Us</a></li>
-                     <li><a href="#menu"><i class="fas fa-chevron-right"></i>Our Menu</a></li>
-                     <li><a href="#reservation"><i class="fas fa-chevron-right"></i>Reservation</a></li>
-                     <li><a href="#blog"><i class="fas fa-chevron-right"></i>Blog</a></li>
-                     <li><a href="#contact-section"><i class="fas fa-chevron-right"></i>Contact</a></li>
-                  </ul>
-               </div>
-               <div class="col-sm-6 col-lg-2">
-                  <div class="ftit">Our Menu</div>
-                  <ul class="flinks ps-0">
-                     <li><a href="#menu"><i class="fas fa-chevron-right"></i>Burgers</a></li>
-                     <li><a href="#menu"><i class="fas fa-chevron-right"></i>Pizza</a></li>
-                     <li><a href="#menu"><i class="fas fa-chevron-right"></i>Fried Chicken</a></li>
-                     <li><a href="#menu"><i class="fas fa-chevron-right"></i>Wraps &amp; Rolls</a></li>
-                     <li><a href="#menu"><i class="fas fa-chevron-right"></i>Pasta</a></li>
-                     <li><a href="#menu"><i class="fas fa-chevron-right"></i>Desserts</a></li>
-                  </ul>
-               </div>
-               <div class="col-lg-4">
-                  <div class="ftit">Get In Touch</div>
-                  <div class="fci">
-                     <div class="fciico"><i class="fas fa-map-marker-alt"></i></div>
-                     <div class="fciinfo"><strong>Address</strong>42 Flavor Street, Manhattan, NY 10001</div>
-                  </div>
-                  <div class="fci">
-                     <div class="fciico"><i class="fas fa-phone-alt"></i></div>
-                     <div class="fciinfo"><strong>Phone</strong>+1 (800) 123-4567</div>
-                  </div>
-                  <div class="fci">
-                     <div class="fciico"><i class="fas fa-envelope"></i></div>
-                     <div class="fciinfo"><strong>Email</strong>hello@sarabfood.com</div>
-                  </div>
-                  <div class="fci">
-                     <div class="fciico"><i class="fas fa-clock"></i></div>
-                     <div class="fciinfo"><strong>Hours</strong>Wed - Sun: 09 AM - 11 PM</div>
-                  </div>
-               </div>
+<footer style="background:#1a2d22; color:rgba(255,255,255,0.7); font-family:'DM Sans',sans-serif; margin-top:auto;">
+    <div style="max-width:1100px; margin:0 auto; padding:32px 24px 20px;">
+
+        <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:32px; margin-bottom:24px;">
+
+            {{-- Logo + Projet --}}
+            <div>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                    <img src="{{ asset('assets/img/Territoire.png') }}" alt="Logo" style="height:28px; ">
+                    {{-- <span style="font-family:'Syne',sans-serif; font-weight:700; font-size:14px; color:#fff;">SAMA TERRITOIRE</span> --}}
+                </div>
+                <p style="font-size:12px; line-height:1.6; color:rgba(255,255,255,0.5); margin:0;">
+                    Plateforme de gestion territoriale — données spatiales, cartographie et statistiques pour le développement local.
+                </p>
             </div>
-         </div>
-         <div class="fbot">
-            <div class="container">
-               <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                  <p>&copy 2026 <span>Sarab Restaurant</span>. All Rights Reserved by <a target="_blank" class="mx-0 fw-bold text-success" href="https://bestwpware.com/">Bestwpware</a>. Made with <span><i class="fas fa-heart"></i></span>  <br>Distributed by <a target="_blank" class="mx-0 fw-bold text-success" href="https://themewagon.com">ThemeWagon</a></p>
-                  <div><a href="#">Privacy Policy</a><a href="#">Terms</a><a href="#">Cookies</a></div>
-               </div>
+
+            {{-- Liens utilisateur --}}
+            <div>
+                <div style="font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:#8FCBA5; margin-bottom:12px; font-weight:600;">Navigation</div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <a href="{{ url('/') }}" style="font-size:12px; color:rgba(255,255,255,0.6); text-decoration:none; transition:color .2s;">Accueil</a>
+                    <a href="{{ route('cartographie') }}" style="font-size:12px; color:rgba(255,255,255,0.6); text-decoration:none; transition:color .2s;">Cartographie</a>
+                    <a href="{{ route('statistique') }}" style="font-size:12px; color:rgba(255,255,255,0.6); text-decoration:none; transition:color .2s;">Statistiques</a>
+                    <a href="{{ route('climat') }}" style="font-size:12px; color:rgba(255,255,255,0.6); text-decoration:none; transition:color .2s;">Changements Climatiques</a>
+                </div>
             </div>
-         </div>
-      </footer>
+
+            {{-- Contact ARD --}}
+            <div>
+                <div style="font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:#8FCBA5; margin-bottom:12px; font-weight:600;">Contact</div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="display:flex; align-items:center; gap:8px; font-size:12px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:#8FCBA5; flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <span>Agence Régionale de Développement — Kaolack</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; font-size:12px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:#8FCBA5; flex-shrink:0;"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
+                        <span>contact@ard-kaolack.sn</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; font-size:12px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:#8FCBA5; flex-shrink:0;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                        <span>+221 33 941 XX XX</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        {{-- Bas --}}
+        <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <span style="font-size:11px; color:rgba(255,255,255,0.35);">&copy; {{ date('Y') }} SAMA TERRITOIRE — Tous droits réservés</span>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:10px; color:rgba(255,255,255,0.3);">ARD Kaolack · Données terrain</span>
+                {{-- Flèche cachée vers login --}}
+                <a href="{{ route('login') }}" title="Administration" style="color:rgba(255,255,255,0.15); text-decoration:none; transition:all .3s; display:inline-flex; align-items:center;" onmouseover="this.style.color='rgba(255,255,255,0.6)'; this.style.transform='translateX(2px)'" onmouseout="this.style.color='rgba(255,255,255,0.15)'; this.style.transform='translateX(0)'">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+        </div>
+
+    </div>
+</footer>

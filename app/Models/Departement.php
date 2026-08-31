@@ -20,4 +20,21 @@ class Departement extends Model
         'longitude',
 
     ];
+
+    public function region()
+    {
+        return $this->belongsTo(Region::class);
+    }
+
+    /** Communes rattachées à ce département. */
+    public function communes()
+    {
+        return $this->hasMany(Commune::class);
+    }
+
+    /** Infrastructures directement rattachées à ce département. */
+    public function infrastructures()
+    {
+        return $this->hasMany(Infrastructure::class);
+    }
 }

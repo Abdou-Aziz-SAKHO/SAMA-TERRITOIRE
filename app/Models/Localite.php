@@ -20,4 +20,27 @@ class Localite extends Model
         'commune_id',
     ];
 
+    /**
+     * Commune à laquelle appartient cette localité.
+     */
+    public function commune()
+    {
+        return $this->belongsTo(Commune::class);
+    }
+
+    /**
+     * Infrastructures qui couvrent cette localité (relation inverse de
+     * Infrastructure::localitesCouvertes(), via la pivot localite_couverts).
+     */
+    public function infrastructuresCouvertes()
+    {
+        return $this->belongsToMany(
+            Infrastructure::class,
+            'localite_couverts',   // table pivot harmonisée
+            'localite_id',         // clé étrangère vers localites
+            'infrastructure_id'    // clé étrangère vers infrastructures
+        )
+        ->withPivot('nbre_population_couvert')
+        ->withTimestamps();
+    }
 }

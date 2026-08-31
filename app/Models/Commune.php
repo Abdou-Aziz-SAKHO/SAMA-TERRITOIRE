@@ -18,6 +18,23 @@ class Commune extends Model
         'latitude',
         'longitude',
         'departement_id',
-
     ];
+
+    /** Département auquel appartient cette commune. */
+    public function departement()
+    {
+        return $this->belongsTo(Departement::class);
+    }
+
+    /** Localités rattachées à cette commune. */
+    public function localites()
+    {
+        return $this->hasMany(Localite::class);
+    }
+
+    /** Infrastructures directement rattachées à cette commune. */
+    public function infrastructures()
+    {
+        return $this->hasMany(Infrastructure::class);
+    }
 }

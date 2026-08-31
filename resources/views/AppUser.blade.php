@@ -18,6 +18,8 @@
 
 @yield('content')
 
+@include('layouts.footerUser')
+
 
 
 {{-- Données (à charger avant app.js) --}}

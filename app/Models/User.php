@@ -53,4 +53,22 @@ class User extends Authenticatable
 
 
     }
+
+    /**
+     * Vérifie si l'utilisateur est un Administrateur simple.
+     * Utilisé pour restreindre l'accès aux fonctions réservées aux admins.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'ADMINISTRATEUR';
+    }
+
+    /**
+     * Vérifie si l'utilisateur est un Super Administrateur.
+     * Seul le Super Admin peut créer d'autres Super Admins.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'SUPER_ADMINISTRATEUR';
+    }
 }

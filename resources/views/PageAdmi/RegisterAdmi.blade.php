@@ -76,8 +76,12 @@
                     <select name="role" required
                         style="width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:8px; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--surface2); outline:none; transition:.2s;"
                         onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+                        {{-- Option Administrateur : visible par tous --}}
                         <option value="ADMINISTRATEUR" {{ old('role') == 'ADMINISTRATEUR' ? 'selected' : '' }}>Administrateur</option>
-                        <option value="SUPER_ADMINISTRATEUR" {{ old('role') == 'SUPER_ADMINISTRATEUR' ? 'selected' : '' }}>Super Administrateur</option>
+                        {{-- Option Super Administrateur : visible UNIQUEMENT si c'est un Super Admin qui est connecté --}}
+                        @if (auth()->check() && auth()->user()->isSuperAdmin())
+                            <option value="SUPER_ADMINISTRATEUR" {{ old('role') == 'SUPER_ADMINISTRATEUR' ? 'selected' : '' }}>Super Administrateur</option>
+                        @endif
                     </select>
                 </div>
 

@@ -4,6 +4,7 @@ use App\Http\Controllers\AdmiController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CartographieController;
+use App\Http\Controllers\DonneesController;
 use App\Http\Controllers\Controller;
 
 Route::get('/', function () {
@@ -17,6 +18,38 @@ Route::get('/statistique', [CartographieController::class, 'statistique'])->name
 
 // Route pour Les Administrateurs
 Route::get('/Dashboard', [AdmiController::class, 'Index'])->name('Dashboard');
+Route::get('/Donnees', [DonneesController::class, 'index'])->name('DonneesAdmi');
+
+// Routes de création pour chaque entité
+Route::post('/Donnees/Region', [DonneesController::class, 'storeRegion'])->name('donnees.storeRegion');
+Route::post('/Donnees/Departement', [DonneesController::class, 'storeDepartement'])->name('donnees.storeDepartement');
+Route::post('/Donnees/Commune', [DonneesController::class, 'storeCommune'])->name('donnees.storeCommune');
+Route::post('/Donnees/Localite', [DonneesController::class, 'storeLocalite'])->name('donnees.storeLocalite');
+Route::post('/Donnees/Secteur', [DonneesController::class, 'storeSecteur'])->name('donnees.storeSecteur');
+Route::post('/Donnees/Infrastructure', [DonneesController::class, 'storeInfrastructure'])->name('donnees.storeInfrastructure');
+// fin des routes de creation
+
+// Routes de modification pour chaque entite (liaison de modele : {region} = instance Region)
+Route::put('/Donnees/Region/{region}', [DonneesController::class, 'updateRegion'])->name('donnees.updateRegion');
+Route::put('/Donnees/Departement/{departement}', [DonneesController::class, 'updateDepartement'])->name('donnees.updateDepartement');
+Route::put('/Donnees/Commune/{commune}', [DonneesController::class, 'updateCommune'])->name('donnees.updateCommune');
+Route::put('/Donnees/Localite/{localite}', [DonneesController::class, 'updateLocalite'])->name('donnees.updateLocalite');
+Route::put('/Donnees/Secteur/{secteur}', [DonneesController::class, 'updateSecteur'])->name('donnees.updateSecteur');
+Route::put('/Donnees/Infrastructure/{infrastructure}', [DonneesController::class, 'updateInfrastructure'])->name('donnees.updateInfrastructure');
+
+// Routes de suppression pour chaque entite
+Route::delete('/Donnees/Region/{region}', [DonneesController::class, 'destroyRegion'])->name('donnees.destroyRegion');
+Route::delete('/Donnees/Departement/{departement}', [DonneesController::class, 'destroyDepartement'])->name('donnees.destroyDepartement');
+Route::delete('/Donnees/Commune/{commune}', [DonneesController::class, 'destroyCommune'])->name('donnees.destroyCommune');
+Route::delete('/Donnees/Localite/{localite}', [DonneesController::class, 'destroyLocalite'])->name('donnees.destroyLocalite');
+Route::delete('/Donnees/Secteur/{secteur}', [DonneesController::class, 'destroySecteur'])->name('donnees.destroySecteur');
+Route::delete('/Donnees/Infrastructure/{infrastructure}', [DonneesController::class, 'destroyInfrastructure'])->name('donnees.destroyInfrastructure');
+
+// Route d'analyse d'impact AVANT suppression : renvoie en JSON la liste
+// de ce qui sera détruit (affiché dans l'écran de confirmation)
+Route::get('/Donnees/Impact/{type}/{id}', [DonneesController::class, 'impact'])->name('donnees.impact');
+
+// route pour creer une utlisateurs
 Route::get('/Register', [AuthController::class, 'register'])->name('Register');
 Route::post('/Register', [AuthController::class, 'registerAdmi'])->name('Register.post');
 

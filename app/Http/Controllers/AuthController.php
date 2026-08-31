@@ -29,8 +29,24 @@ class AuthController extends Controller
             'telephone' => 'required|digits:9|unique:users',
             'cni' => 'nullable|min:13|max:13',
             'password' => 'required|min:6|confirmed',
-            'role' => 'required',
+            // Le rôle est validé : seules les deux valeurs de l'enum sont acceptées
+            'role' => 'required|in:ADMINISTRATEUR,SUPER_ADMINISTRATEUR',
         ]);
+
+        // SÉCURITÉ : Seul un Super Administrateur connecté a le droit de créer un Super Administrateur.
+        // Si un simple Admin (ou un visiteur non connecté) tente d'envoyer 'SUPER_ADMINISTRATEUR',
+        // le rôle est automatiquement rétrogradé en 'ADMINISTRATEUR'.
+        $role = $request->role;
+
+        // On récupère l'utilisateur connecté et on vérifie son type avec instanceof :
+        // cela permet à l'éditeur (Intelephense/VS Code) de connaître la vraie classe
+        // et de ne plus signaler "Undefined method isSuperAdmin" (faux positif).
+        /** @var \App\Models\User|null $connecte */
+        $connecte = Auth::user();
+
+        if ($role === 'SUPER_ADMINISTRATEUR' && (!$connecte instanceof User || !$connecte->isSuperAdmin())) {
+            $role = 'ADMINISTRATEUR';
+        }
 
         //  Creer un utilisateur Admin
         $user = User::create([
@@ -40,7 +56,7 @@ class AuthController extends Controller
             'telephone' => $request->telephone,
             'cni' => $request->cni,
             'password' => Hash::make($request->password),
-            'role' => $request->role,
+            'role' => $role,
             'statut' => 1
         ]);
 

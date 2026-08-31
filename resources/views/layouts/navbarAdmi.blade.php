@@ -52,39 +52,10 @@
 
 
         {{-- Données --}}
-        <div class="nav-dropdown">
-            <button class="nav-btn nav-dropdown-toggle">
-                <i class="fa-solid fa-database"></i>
-                Données
-                <i class="fa-solid fa-chevron-down dropdown-caret"></i>
-            </button>
-            <div class="nav-dropdown-menu">
-                <button class="nav-dropdown-item" data-href="{{ url('/DonneesAdmi/Region') }}">
-                    <i class="fa-solid fa-location-dot"></i>
-                    Régions
-                </button>
-                <button class="nav-dropdown-item" data-href="{{ url('/DonneesAdmi/Departement') }}">
-                    <i class="fa-solid fa-location-dot"></i>
-                    Départements
-                </button>
-                <button class="nav-dropdown-item" data-href="{{ url('/DonneesAdmi/Departement') }}">
-                    <i class="fa-solid fa-location-dot"></i>
-                    Communes
-                </button>
-                <button class="nav-dropdown-item" data-href="{{ url('/DonneesAdmi/Departement') }}">
-                    <i class="fa-solid fa-location-dot"></i>
-                    localités
-                </button>
-                <button class="nav-dropdown-item" data-href="{{ url('/DonneesAdmi/Departement') }}">
-                    <i class="fa-solid fa-street-view"></i>
-                    Secteurs
-                </button>
-                <button class="nav-dropdown-item" data-href="{{ url('/DonneesAdmi/Departement') }}">
-                    <i class="fa-solid fa-landmark"></i>
-                    infrastructures
-                </button>
-            </div>
-        </div>
+        <button class="nav-btn" data-href="{{ url('/Donnees') }}">
+            <i class="fa-solid fa-database"></i>
+            Données
+        </button>
 
 
         {{-- Utilisateurs --}}

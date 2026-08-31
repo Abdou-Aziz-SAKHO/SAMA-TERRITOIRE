@@ -18,6 +18,8 @@
 
 @yield('content')
 
+@include('layouts.footerAdmi')
+
 
 
 {{-- Données (à charger avant app.js) --}}
