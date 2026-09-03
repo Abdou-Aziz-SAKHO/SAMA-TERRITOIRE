@@ -2,7 +2,7 @@
 @section('content')
 <div class="page" style="display:block; padding-top:var(--hdr); min-height:100vh;">
     <div style="max-width:700px; margin:40px auto; padding:0 20px;">
-        <div class="page-title">Créer un utilisateur</div>
+        <div class="page-title">Créer un Administrateur</div>
         <div class="page-sub">Remplissez les informations ci-dessous pour ajouter un nouvel utilisateur</div>
 
         @if ($errors->any())

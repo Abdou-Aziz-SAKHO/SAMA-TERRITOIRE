@@ -59,7 +59,7 @@
 
 
         {{-- Utilisateurs --}}
-        <button class="nav-btn" data-href="{{ url('/U') }}">
+        <button class="nav-btn" data-href="{{ url('/UtilisateursAdmi') }}">
             <i class="fa-solid fa-users"></i>
             Utilisateurs
         </button>

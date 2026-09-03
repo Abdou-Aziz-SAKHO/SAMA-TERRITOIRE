@@ -71,4 +71,28 @@ class User extends Authenticatable
     {
         return $this->role === 'SUPER_ADMINISTRATEUR';
     }
+
+    /** Nom complet "Prénom Nom". */
+    public function nomComplet(): string
+    {
+        return trim(($this->prenom ?? '') . ' ' . ($this->nom ?? ''));
+    }
+
+    /** Compte actif (non bloqué). */
+    public function isActif(): bool
+    {
+        return $this->statut === true || $this->statut === 1;
+    }
+
+    /** Compte bloqué. */
+    public function isBloque(): bool
+    {
+        return !$this->isActif();
+    }
+
+    /** Libellé lisible du rôle. */
+    public function libelleRole(): string
+    {
+        return $this->isSuperAdmin() ? 'Super Administrateur' : 'Administrateur';
+    }
 }

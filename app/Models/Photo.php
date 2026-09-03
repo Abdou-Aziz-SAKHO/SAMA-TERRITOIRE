@@ -21,5 +21,8 @@ class Photo extends Model
         return $this->belongsTo(Infrastructure::class);
     }
 
-
+    public function actualite()
+    {
+        return $this->belongsTo(Actualite::class);
+    }
 }

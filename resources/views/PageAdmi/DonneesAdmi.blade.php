@@ -12,11 +12,16 @@
 <div style="display:flex; height:calc(100vh - var(--hdr)); margin-top:var(--hdr);">
 
     {{-- ═══ SIDEBAR GAUCHE ═══ --}}
-    <aside style="width:240px; min-width:240px; background:var(--white); border-right:1px solid var(--border); padding:16px 12px; overflow-y:auto; display:flex; flex-direction:column; gap:4px;">
+    <aside class="app-sidebar" style="background:var(--white); border-right:1px solid var(--border); padding:20px 16px; display:flex; flex-direction:column; gap:6px; overflow-y:auto;">
 
         {{-- Titre sidebar --}}
-        <div style="font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:var(--text); margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid var(--border);">
-            <i class="fa-solid fa-database" style="margin-right:6px; color:var(--primary);"></i> Gestion des données
+        <div class="sidebar-title" style="font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:var(--text); padding:0 8px 12px; border-bottom:1px solid var(--border);">
+            <span><i class="fa-solid fa-database" style="margin-right:8px; color:var(--primary);"></i> Données</span>
+        </div>
+
+        {{-- Sous-titre navigation --}}
+        <div class="sidebar-nav-label" style="font-size:11px; color:var(--text-muted); padding:10px 8px 4px; text-transform:uppercase; letter-spacing:.5px; font-weight:600;">
+            Navigation
         </div>
 
         {{-- ═══ Menu catégorie : chaque clic charge l'onglet correspondant ═══ --}}
@@ -28,36 +33,40 @@
                 'localites'       => ['icon' => 'fa-solid fa-house',        'label' => 'Localités'],
                 'secteurs'        => ['icon' => 'fa-solid fa-street-view',  'label' => 'Secteurs'],
                 'infrastructures' => ['icon' => 'fa-solid fa-landmark',     'label' => 'Infrastructures'],
+                'documents'       => ['icon' => 'fa-solid fa-folder-open',  'label' => 'Documents'],
             ];
         @endphp
 
         @foreach($menuItems as $key => $item)
             <a href="{{ route('DonneesAdmi', ['tab' => $key]) }}"
-               style="display:flex; align-items:center; gap:9px; padding:9px 11px; border-radius:8px; font-size:13px; text-decoration:none; transition:.2s; border:1px solid transparent;
-                      {{ $tab === $key ? 'color:var(--primary); background:var(--primary-lt); border-color:#b5dfc6; font-weight:600;' : 'color:var(--text-dim);' }}"
-               onmouseover="if('{{ $tab }}' !== '{{ $key }}') this.style.color='var(--text)'; this.style.background='var(--surface2)'"
-               onmouseout="if('{{ $tab }}' !== '{{ $key }}') this.style.color='var(--text-dim)'; this.style.background='transparent'">
-                <i class="{{ $item['icon'] }}"></i>
-                {{ $item['label'] }}
+               class="sidebar-item {{ $tab === $key ? 'active-sidebar' : '' }}"
+               title="{{ $item['label'] }}"
+               style="display:flex; align-items:center; gap:9px; padding:12px 16px; border-radius:9px; font-size:13px; text-decoration:none; font-weight:{{ $tab === $key ? '600' : '500' }};
+                      background:{{ $tab === $key ? 'var(--primary)' : 'var(--surface2)' }};
+                      color:{{ $tab === $key ? '#fff' : 'var(--text-dim)' }};">
+                <i class="{{ $item['icon'] }}" style="width:16px; text-align:center;"></i>
+                <span class="sidebar-label">{{ $item['label'] }}</span>
             </a>
         @endforeach
 
         {{-- ═══ Zone filtres (apparaît selon l'onglet actif) ═══ --}}
-        <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border);">
-            <div style="font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.6px; margin-bottom:10px;">
+        <div class="sidebar-filters" style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border);">
+            <div style="font-size:11px; color:var(--text-muted); padding:0 0 10px; text-transform:uppercase; letter-spacing:.5px; font-weight:600;">
                 <i class="fa-solid fa-filter" style="margin-right:4px;"></i> Filtres
             </div>
 
-            {{-- Filtre Région : visible pour Départements, Communes, Localités, Infrastructures --}}
-            @if(in_array($tab, ['departements', 'communes', 'localites', 'infrastructures']))
+            {{-- Filtre Région : visible pour Départements, Communes, Localités, Infrastructures, Documents --}}
+            @if(in_array($tab, ['departements', 'communes', 'localites', 'infrastructures', 'documents']))
                 <div style="margin-bottom:10px;">
                     <label style="display:block; font-size:11px; font-weight:600; color:var(--text-dim); margin-bottom:4px;">Région</label>
                     <form id="filter-region-form" method="GET" action="{{ route('DonneesAdmi') }}">
                         <input type="hidden" name="tab" value="{{ $tab }}">
+                        @if($q) <input type="hidden" name="q" value="{{ $q }}"> @endif
                         @if($departementId) <input type="hidden" name="departement_id" value="{{ $departementId }}"> @endif
                         @if($communeId) <input type="hidden" name="commune_id" value="{{ $communeId }}"> @endif
                         @if($secteurId) <input type="hidden" name="secteur_id" value="{{ $secteurId }}"> @endif
                         @if($localiteId) <input type="hidden" name="localite_id" value="{{ $localiteId }}"> @endif
+                        @if($docType) <input type="hidden" name="type_document" value="{{ $docType }}"> @endif
                         <select name="region_id" onchange="this.form.submit()" style="width:100%; padding:7px 10px; font-size:12px; border:1px solid var(--border); border-radius:7px; background:var(--surface2); color:var(--text); cursor:pointer;">
                             <option value="">Toutes les régions</option>
                             @foreach($allRegions as $r)
@@ -68,16 +77,18 @@
                 </div>
             @endif
 
-            {{-- Filtre Département : visible pour Communes, Localités, Infrastructures --}}
-            @if(in_array($tab, ['communes', 'localites', 'infrastructures']))
+            {{-- Filtre Département : visible pour Communes, Localités, Infrastructures, Documents --}}
+            @if(in_array($tab, ['communes', 'localites', 'infrastructures', 'documents']))
                 <div style="margin-bottom:10px;">
                     <label style="display:block; font-size:11px; font-weight:600; color:var(--text-dim); margin-bottom:4px;">Département</label>
                     <form id="filter-dept-form" method="GET" action="{{ route('DonneesAdmi') }}">
                         <input type="hidden" name="tab" value="{{ $tab }}">
+                        @if($q) <input type="hidden" name="q" value="{{ $q }}"> @endif
                         @if($regionId) <input type="hidden" name="region_id" value="{{ $regionId }}"> @endif
                         @if($communeId) <input type="hidden" name="commune_id" value="{{ $communeId }}"> @endif
                         @if($secteurId) <input type="hidden" name="secteur_id" value="{{ $secteurId }}"> @endif
                         @if($localiteId) <input type="hidden" name="localite_id" value="{{ $localiteId }}"> @endif
+                        @if($docType) <input type="hidden" name="type_document" value="{{ $docType }}"> @endif
                         <select name="departement_id" onchange="this.form.submit()" style="width:100%; padding:7px 10px; font-size:12px; border:1px solid var(--border); border-radius:7px; background:var(--surface2); color:var(--text); cursor:pointer;">
                             <option value="">Tous les départements</option>
                             @php
@@ -93,16 +104,18 @@
                 </div>
             @endif
 
-            {{-- Filtre Commune : visible pour Localités et Infrastructures --}}
-            @if(in_array($tab, ['localites', 'infrastructures']))
+            {{-- Filtre Commune : visible pour Localités, Infrastructures et Documents --}}
+            @if(in_array($tab, ['localites', 'infrastructures', 'documents']))
                 <div style="margin-bottom:10px;">
                     <label style="display:block; font-size:11px; font-weight:600; color:var(--text-dim); margin-bottom:4px;">Commune</label>
                     <form id="filter-commune-form" method="GET" action="{{ route('DonneesAdmi') }}">
                         <input type="hidden" name="tab" value="{{ $tab }}">
+                        @if($q) <input type="hidden" name="q" value="{{ $q }}"> @endif
                         @if($regionId) <input type="hidden" name="region_id" value="{{ $regionId }}"> @endif
                         @if($departementId) <input type="hidden" name="departement_id" value="{{ $departementId }}"> @endif
                         @if($secteurId) <input type="hidden" name="secteur_id" value="{{ $secteurId }}"> @endif
                         @if($localiteId) <input type="hidden" name="localite_id" value="{{ $localiteId }}"> @endif
+                        @if($docType) <input type="hidden" name="type_document" value="{{ $docType }}"> @endif
                         <select name="commune_id" onchange="this.form.submit()" style="width:100%; padding:7px 10px; font-size:12px; border:1px solid var(--border); border-radius:7px; background:var(--surface2); color:var(--text); cursor:pointer;">
                             <option value="">Toutes les communes</option>
                             @php
@@ -124,6 +137,81 @@
                 </div>
             @endif
 
+            {{-- ═══ Filtres spécifiques aux Documents : Localité + Type ═══ --}}
+            @if($tab === 'documents')
+                {{-- Filtre Localité --}}
+                <div style="margin-bottom:10px;">
+                    <label style="display:block; font-size:11px; font-weight:600; color:var(--text-dim); margin-bottom:4px;">Localité</label>
+                    <form id="filter-localite-doc-form" method="GET" action="{{ route('DonneesAdmi') }}">
+                        <input type="hidden" name="tab" value="{{ $tab }}">
+                        @if($q) <input type="hidden" name="q" value="{{ $q }}"> @endif
+                        @if($regionId) <input type="hidden" name="region_id" value="{{ $regionId }}"> @endif
+                        @if($departementId) <input type="hidden" name="departement_id" value="{{ $departementId }}"> @endif
+                        @if($communeId) <input type="hidden" name="commune_id" value="{{ $communeId }}"> @endif
+                        @if($docType) <input type="hidden" name="type_document" value="{{ $docType }}"> @endif
+                        @if($infrastructureId) <input type="hidden" name="infrastructure_id" value="{{ $infrastructureId }}"> @endif
+                        <select name="localite_id" onchange="this.form.submit()" style="width:100%; padding:7px 10px; font-size:12px; border:1px solid var(--border); border-radius:7px; background:var(--surface2); color:var(--text); cursor:pointer;">
+                            <option value="">Toutes les localités</option>
+                            @php
+                                // Deux valeurs spéciales : un 0 explicite force "sans
+                                // localité précise", sinon on propose les localités
+                                // cohérentes avec la commune/département/région choisis.
+                                $filteredLocalitesDoc = $communeId
+                                    ? $allLocalites->where('commune_id', $communeId)
+                                    : ($departementId
+                                        ? $allLocalites->filter(fn ($l) => in_array($l->commune_id, $allCommunes->where('departement_id', $departementId)->pluck('id')->all()))
+                                        : ($regionId
+                                            ? $allLocalites->filter(fn ($l) => in_array($l->commune_id, $allCommunes->filter(fn ($c) => in_array($c->departement_id, $allDepartements->where('region_id', $regionId)->pluck('id')->all()))->pluck('id')->all()))
+                                            : $allLocalites));
+                            @endphp
+                            @foreach($filteredLocalitesDoc as $l)
+                                <option value="{{ $l->id }}" {{ $localiteId == $l->id ? 'selected' : '' }}>{{ $l->nom }}</option>
+                            @endforeach
+                        </select>
+                    </form>
+                </div>
+
+                {{-- Filtre Infrastructure --}}
+                <div style="margin-bottom:10px;">
+                    <label style="display:block; font-size:11px; font-weight:600; color:var(--text-dim); margin-bottom:4px;">Infrastructure</label>
+                    <form id="filter-infra-doc-form" method="GET" action="{{ route('DonneesAdmi') }}">
+                        <input type="hidden" name="tab" value="{{ $tab }}">
+                        @if($q) <input type="hidden" name="q" value="{{ $q }}"> @endif
+                        @if($regionId) <input type="hidden" name="region_id" value="{{ $regionId }}"> @endif
+                        @if($departementId) <input type="hidden" name="departement_id" value="{{ $departementId }}"> @endif
+                        @if($communeId) <input type="hidden" name="commune_id" value="{{ $communeId }}"> @endif
+                        @if($localiteId) <input type="hidden" name="localite_id" value="{{ $localiteId }}"> @endif
+                        @if($docType) <input type="hidden" name="type_document" value="{{ $docType }}"> @endif
+                        <select name="infrastructure_id" onchange="this.form.submit()" style="width:100%; padding:7px 10px; font-size:12px; border:1px solid var(--border); border-radius:7px; background:var(--surface2); color:var(--text); cursor:pointer;">
+                            <option value="">Toutes les infrastructures</option>
+                            @foreach($filteredInfrastructures as $inf)
+                                <option value="{{ $inf->id }}" {{ $infrastructureId == $inf->id ? 'selected' : '' }}>{{ $inf->nom }}</option>
+                            @endforeach
+                        </select>
+                    </form>
+                </div>
+
+                {{-- Filtre Type de document --}}
+                <div style="margin-bottom:10px;">
+                    <label style="display:block; font-size:11px; font-weight:600; color:var(--text-dim); margin-bottom:4px;">Type de document</label>
+                    <form id="filter-type-doc-form" method="GET" action="{{ route('DonneesAdmi') }}">
+                        <input type="hidden" name="tab" value="{{ $tab }}">
+                        @if($q) <input type="hidden" name="q" value="{{ $q }}"> @endif
+                        @if($regionId) <input type="hidden" name="region_id" value="{{ $regionId }}"> @endif
+                        @if($departementId) <input type="hidden" name="departement_id" value="{{ $departementId }}"> @endif
+                        @if($communeId) <input type="hidden" name="commune_id" value="{{ $communeId }}"> @endif
+                        @if($localiteId) <input type="hidden" name="localite_id" value="{{ $localiteId }}"> @endif
+                        @if($infrastructureId) <input type="hidden" name="infrastructure_id" value="{{ $infrastructureId }}"> @endif
+                        <select name="type_document" onchange="this.form.submit()" style="width:100%; padding:7px 10px; font-size:12px; border:1px solid var(--border); border-radius:7px; background:var(--surface2); color:var(--text); cursor:pointer;">
+                            <option value="">Tous les types</option>
+                            @foreach(['rapport', 'fiche', 'document', 'PDC'] as $t)
+                                <option value="{{ $t }}" {{ $docType === $t ? 'selected' : '' }}>{{ ucfirst($t) }}</option>
+                            @endforeach
+                        </select>
+                    </form>
+                </div>
+            @endif
+
             {{-- ═══ Filtres spécifiques aux Infrastructures : Localité + Secteur ═══ --}}
             @if($tab === 'infrastructures')
                 {{-- Filtre Localité --}}
@@ -131,6 +219,7 @@
                     <label style="display:block; font-size:11px; font-weight:600; color:var(--text-dim); margin-bottom:4px;">Localité</label>
                     <form id="filter-localite-form" method="GET" action="{{ route('DonneesAdmi') }}">
                         <input type="hidden" name="tab" value="{{ $tab }}">
+                        @if($q) <input type="hidden" name="q" value="{{ $q }}"> @endif
                         @if($regionId) <input type="hidden" name="region_id" value="{{ $regionId }}"> @endif
                         @if($departementId) <input type="hidden" name="departement_id" value="{{ $departementId }}"> @endif
                         @if($communeId) <input type="hidden" name="commune_id" value="{{ $communeId }}"> @endif
@@ -160,6 +249,7 @@
                     <label style="display:block; font-size:11px; font-weight:600; color:var(--text-dim); margin-bottom:4px;">Secteur</label>
                     <form id="filter-secteur-form" method="GET" action="{{ route('DonneesAdmi') }}">
                         <input type="hidden" name="tab" value="{{ $tab }}">
+                        @if($q) <input type="hidden" name="q" value="{{ $q }}"> @endif
                         @if($regionId) <input type="hidden" name="region_id" value="{{ $regionId }}"> @endif
                         @if($departementId) <input type="hidden" name="departement_id" value="{{ $departementId }}"> @endif
                         @if($communeId) <input type="hidden" name="commune_id" value="{{ $communeId }}"> @endif
@@ -175,13 +265,22 @@
             @endif
 
             {{-- Bouton réinitialiser les filtres --}}
-            @if($regionId || $departementId || $communeId || $secteurId || $localiteId)
+            @if($regionId || $departementId || $communeId || $secteurId || $localiteId || $infrastructureId)
                 <a href="{{ route('DonneesAdmi', ['tab' => $tab]) }}"
                    style="display:flex; align-items:center; justify-content:center; gap:6px; padding:7px; font-size:11px; font-weight:500; color:var(--text-dim); text-decoration:none; border:1px solid var(--border); border-radius:7px; transition:.2s; margin-top:4px;"
                    onmouseover="this.style.borderColor='var(--red)'; this.style.color='var(--red)'"
                    onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-dim)'">
                     <i class="fa-solid fa-xmark"></i> Réinitialiser les filtres
                 </a>
+            @endif
+        </div>
+
+        <div class="sidebar-user" style="font-size:11px; color:var(--text-muted); padding:10px 8px 0; border-top:1px solid var(--border);">
+            @if($connecte)
+                Connecté : <strong style="color:var(--text);">{{ $connecte->prenom }} {{ $connecte->nom }}</strong>
+                <br><span style="display:inline-block; margin-top:4px; padding:2px 8px; border-radius:6px; background:{{ $connecte->role === 'SUPER_ADMINISTRATEUR' ? '#eef4ff' : '#eefaf1' }}; color:{{ $connecte->role === 'SUPER_ADMINISTRATEUR' ? '#1d4ed8' : '#1d8a4e' }}; font-size:11px; font-weight:600;">{{ $connecte->role === 'SUPER_ADMINISTRATEUR' ? 'Super Admin' : 'Admin' }}</span>
+            @else
+                Non connecté (lecture seule)
             @endif
         </div>
 
@@ -211,49 +310,52 @@
                     <div style="font-family:'Montserrat'; font-size:30px; font-weight:800; color:var(--text);">Régions</div>
                     <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">{{ $regions->total() }} région(s) au total</div>
                 </div>
-                <button onclick="openFormModal('modal-region')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--primary); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer;">
-                    <i class="fa-solid fa-plus"></i> Ajouter
-                </button>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    @include('PageAdmi.partials.recherche_onglet', ['placeholder' => 'une région'])
+                    <button onclick="openFormModal('modal-region')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--primary); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer;">
+                        <i class="fa-solid fa-plus"></i> Ajouter
+                    </button>
+                </div>
             </div>
-            <div style="background:var(--surface); border-radius:14px; box-shadow:var(--card-shadow); padding:20px; overflow-x:auto;">
+            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
-                        <tr style="border-bottom:2px solid var(--border);">
-                            <th style="text-align:left; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase; letter-spacing:.5px;">Nom</th>
-                            <th style="text-align:right; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Superficie</th>
-                            <th style="text-align:right; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Population</th>
-                            <th style="text-align:right; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Ménages</th>
-                            <th style="text-align:right; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Infrastructures</th>
-                            <th style="text-align:center; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Actions</th>
+                        <tr style="background:var(--surface2); text-align:left;">
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase; letter-spacing:.5px;">Nom</th>
+                            <th style="text-align:right; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Superficie</th>
+                            <th style="text-align:right; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Population</th>
+                            <th style="text-align:right; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Ménages</th>
+                            <th style="text-align:right; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Infrastructures</th>
+                            <th style="text-align:center; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($regions as $r)
-                            <tr style="border-bottom:1px solid var(--border2); transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
-                                <td style="padding:10px 12px; font-weight:500; color:var(--text);">{{ $r->nom }}</td>
-                                <td style="padding:10px 12px; text-align:right; color:var(--text-dim);">{{ $r->superficie ?? '—' }}</td>
-                                <td style="padding:10px 12px; text-align:right; color:var(--text-dim);">{{ $r->taille_population ?? '—' }}</td>
-                                <td style="padding:10px 12px; text-align:right; color:var(--text-dim);">{{ $r->nbre_menage ?? '—' }}</td>
-                                <td style="padding:10px 12px; text-align:right; color:var(--text-dim);">{{ $r->nbre_infrastructure ?? '—' }}</td>
-                                <td style="padding:10px 12px; text-align:center;">
+                            <tr style="border-bottom:1px solid var(--border2);">
+                                <td style="padding:12px 16px; font-weight:500; color:var(--text);">{{ $r->nom }}</td>
+                                <td style="padding:12px 16px; text-align:right; color:var(--text-dim);">{{ $r->superficie ?? '—' }}</td>
+                                <td style="padding:12px 16px; text-align:right; color:var(--text-dim);">{{ $r->taille_population ?? '—' }}</td>
+                                <td style="padding:12px 16px; text-align:right; color:var(--text-dim);">{{ $r->nbre_menage ?? '—' }}</td>
+                                <td style="padding:12px 16px; text-align:right; color:var(--text-dim);">{{ $r->nbre_infrastructure ?? '—' }}</td>
+                                <td style="padding:12px 16px; text-align:center;">
                                     {{-- Consulter : ouvre la modal de consultation avec les détails de la ligne --}}
                                     <button type="button" class="btn-voir" data-entity="region" data-id="{{ $r->id }}"
-                                        data-values="{{ json_encode($r->only(['nom','superficie','taille_population','nbre_menage','nbre_homme','nbre_femme','nbre_infrastructure','latitude','longitude'])) }}"
-                                        style="background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:13px; padding:4px 8px;" title="Consulter"><i class="fa-solid fa-eye"></i></button>
+                                        data-values="{{ json_encode(array_merge($r->only(['nom','superficie','taille_population','nbre_menage','nbre_homme','nbre_femme','nbre_infrastructure','latitude','longitude']), ['documents' => $docsParRegion[$r->id] ?? []])) }}"
+                                        style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--text); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Consulter"><i class="fa-solid fa-eye"></i></button>
                                     {{-- Modifier : ouvre la modal d'édition générique avec les valeurs de la ligne --}}
                                     <button type="button" class="btn-edit" data-entity="region" data-id="{{ $r->id }}"
                                         data-values="{{ json_encode($r->only(['nom','superficie','taille_population','nbre_menage','nbre_homme','nbre_femme','nbre_infrastructure','latitude','longitude'])) }}"
-                                        style="background:none; border:none; color:var(--primary); cursor:pointer; font-size:13px; padding:4px 8px;" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                                        style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--primary); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Modifier"><i class="fa-solid fa-pen"></i></button>
                                     {{-- Supprimer : formulaire DELETE avec confirmation (protection CSRF) --}}
                                     <form action="{{ route('donnees.destroyRegion', $r) }}" method="POST" style="display:inline-block;" onsubmit="confirmerSuppression(event, 'region', {{ $r->id }}, @js($r->nom));">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:13px; padding:4px 8px;" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                                        <button type="submit" style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--red); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
                                     </form>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" style="padding:24px; text-align:center; color:var(--text-muted);">Aucune région trouvée</td></tr>
+                            <tr><td colspan="6" style="padding:32px; text-align:center; color:var(--text-muted); font-size:13px;">Aucune région trouvée</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -269,44 +371,47 @@
                     <div style="font-family:'Montserrat'; font-size:30px; font-weight:800; color:var(--text);">Départements</div>
                     <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">{{ $departements->total() }} département(s) au total</div>
                 </div>
-                <button onclick="openFormModal('modal-departement')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--primary); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer;">
-                    <i class="fa-solid fa-plus"></i> Ajouter
-                </button>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    @include('PageAdmi.partials.recherche_onglet', ['placeholder' => 'un département'])
+                    <button onclick="openFormModal('modal-departement')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--primary); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer;">
+                        <i class="fa-solid fa-plus"></i> Ajouter
+                    </button>
+                </div>
             </div>
-            <div style="background:var(--surface); border-radius:14px; box-shadow:var(--card-shadow); padding:20px; overflow-x:auto;">
+            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
-                        <tr style="border-bottom:2px solid var(--border);">
-                            <th style="text-align:left; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Nom</th>
-                            <th style="text-align:left; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Région</th>
-                            <th style="text-align:right; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Superficie</th>
-                            <th style="text-align:right; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Population</th>
-                            <th style="text-align:center; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Actions</th>
+                        <tr style="background:var(--surface2); text-align:left;">
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Nom</th>
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Région</th>
+                            <th style="text-align:right; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Superficie</th>
+                            <th style="text-align:right; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Population</th>
+                            <th style="text-align:center; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($departements as $d)
-                            <tr style="border-bottom:1px solid var(--border2); transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
-                                <td style="padding:10px 12px; font-weight:500; color:var(--text);">{{ $d->nom }}</td>
-                                <td style="padding:10px 12px; color:var(--text-dim);">{{ $d->region->nom ?? '—' }}</td>
-                                <td style="padding:10px 12px; text-align:right; color:var(--text-dim);">{{ $d->superficie ?? '—' }}</td>
-                                <td style="padding:10px 12px; text-align:right; color:var(--text-dim);">{{ $d->taille_population ?? '—' }}</td>
-                                <td style="padding:10px 12px; text-align:center;">
+                            <tr style="border-bottom:1px solid var(--border2);">
+                                <td style="padding:12px 16px; font-weight:500; color:var(--text);">{{ $d->nom }}</td>
+                                <td style="padding:12px 16px; color:var(--text-dim);">{{ $d->region->nom ?? '—' }}</td>
+                                <td style="padding:12px 16px; text-align:right; color:var(--text-dim);">{{ $d->superficie ?? '—' }}</td>
+                                <td style="padding:12px 16px; text-align:right; color:var(--text-dim);">{{ $d->taille_population ?? '—' }}</td>
+                                <td style="padding:12px 16px; text-align:center;">
                                     <button type="button" class="btn-voir" data-entity="departement" data-id="{{ $d->id }}"
-                                        data-values="{{ json_encode($d->only(['nom','region_id','superficie','taille_population','nbre_menage','nbre_homme','nbre_femme','latitude','longitude'])) }}"
-                                        style="background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:13px; padding:4px 8px;" title="Consulter"><i class="fa-solid fa-eye"></i></button>
+                                        data-values="{{ json_encode(array_merge($d->only(['nom','region_id','superficie','taille_population','nbre_menage','nbre_homme','nbre_femme','latitude','longitude']), ['documents' => $docsParDepartement[$d->id] ?? []])) }}"
+                                        style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--text); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Consulter"><i class="fa-solid fa-eye"></i></button>
                                     <button type="button" class="btn-edit" data-entity="departement" data-id="{{ $d->id }}"
                                         data-values="{{ json_encode($d->only(['nom','region_id','superficie','taille_population','nbre_menage','nbre_homme','nbre_femme','latitude','longitude'])) }}"
-                                        style="background:none; border:none; color:var(--primary); cursor:pointer; font-size:13px; padding:4px 8px;" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                                        style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--primary); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Modifier"><i class="fa-solid fa-pen"></i></button>
                                     <form action="{{ route('donnees.destroyDepartement', $d) }}" method="POST" style="display:inline-block;" onsubmit="confirmerSuppression(event, 'departement', {{ $d->id }}, @js($d->nom));">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:13px; padding:4px 8px;" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                                        <button type="submit" style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--red); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
                                     </form>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" style="padding:24px; text-align:center; color:var(--text-muted);">Aucun département trouvé</td></tr>
+                            <tr><td colspan="5" style="padding:32px; text-align:center; color:var(--text-muted); font-size:13px;">Aucun département trouvé</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -322,44 +427,47 @@
                     <div style="font-family:'Montserrat'; font-size:30px;  font-weight:800; color:var(--text);">Communes</div>
                     <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">{{ $communes->total() }} commune(s) au total</div>
                 </div>
-                <button onclick="openFormModal('modal-commune')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--primary); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer;">
-                    <i class="fa-solid fa-plus"></i> Ajouter
-                </button>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    @include('PageAdmi.partials.recherche_onglet', ['placeholder' => 'une commune'])
+                    <button onclick="openFormModal('modal-commune')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--primary); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer;">
+                        <i class="fa-solid fa-plus"></i> Ajouter
+                    </button>
+                </div>
             </div>
-            <div style="background:var(--surface); border-radius:14px; box-shadow:var(--card-shadow); padding:20px; overflow-x:auto;">
+            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
-                        <tr style="border-bottom:2px solid var(--border);">
-                            <th style="text-align:left; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Nom</th>
-                            <th style="text-align:left; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Département</th>
-                            <th style="text-align:right; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Superficie</th>
-                            <th style="text-align:right; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Population</th>
-                            <th style="text-align:center; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Actions</th>
+                        <tr style="background:var(--surface2); text-align:left;">
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Nom</th>
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Département</th>
+                            <th style="text-align:right; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Superficie</th>
+                            <th style="text-align:right; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Population</th>
+                            <th style="text-align:center; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($communes as $c)
-                            <tr style="border-bottom:1px solid var(--border2); transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
-                                <td style="padding:10px 12px; font-weight:500; color:var(--text);">{{ $c->nom }}</td>
-                                <td style="padding:10px 12px; color:var(--text-dim);">{{ $c->departement->nom ?? '—' }}</td>
-                                <td style="padding:10px 12px; text-align:right; color:var(--text-dim);">{{ $c->superficie ?? '—' }}</td>
-                                <td style="padding:10px 12px; text-align:right; color:var(--text-dim);">{{ $c->taille_population ?? '—' }}</td>
-                                <td style="padding:10px 12px; text-align:center;">
+                            <tr style="border-bottom:1px solid var(--border2);">
+                                <td style="padding:12px 16px; font-weight:500; color:var(--text);">{{ $c->nom }}</td>
+                                <td style="padding:12px 16px; color:var(--text-dim);">{{ $c->departement->nom ?? '—' }}</td>
+                                <td style="padding:12px 16px; text-align:right; color:var(--text-dim);">{{ $c->superficie ?? '—' }}</td>
+                                <td style="padding:12px 16px; text-align:right; color:var(--text-dim);">{{ $c->taille_population ?? '—' }}</td>
+                                <td style="padding:12px 16px; text-align:center;">
                                     <button type="button" class="btn-voir" data-entity="commune" data-id="{{ $c->id }}"
-                                        data-values="{{ json_encode($c->only(['nom','departement_id','superficie','taille_population','nbre_menage','nbre_homme','nbre_femme','latitude','longitude'])) }}"
-                                        style="background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:13px; padding:4px 8px;" title="Consulter"><i class="fa-solid fa-eye"></i></button>
+                                        data-values="{{ json_encode(array_merge($c->only(['nom','departement_id','superficie','taille_population','nbre_menage','nbre_homme','nbre_femme','latitude','longitude']), ['documents' => $docsParCommune[$c->id] ?? []])) }}"
+                                        style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--text); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Consulter"><i class="fa-solid fa-eye"></i></button>
                                     <button type="button" class="btn-edit" data-entity="commune" data-id="{{ $c->id }}"
                                         data-values="{{ json_encode($c->only(['nom','departement_id','superficie','taille_population','nbre_menage','nbre_homme','nbre_femme','latitude','longitude'])) }}"
-                                        style="background:none; border:none; color:var(--primary); cursor:pointer; font-size:13px; padding:4px 8px;" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                                        style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--primary); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Modifier"><i class="fa-solid fa-pen"></i></button>
                                     <form action="{{ route('donnees.destroyCommune', $c) }}" method="POST" style="display:inline-block;" onsubmit="confirmerSuppression(event, 'commune', {{ $c->id }}, @js($c->nom));">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:13px; padding:4px 8px;" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                                        <button type="submit" style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--red); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
                                     </form>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" style="padding:24px; text-align:center; color:var(--text-muted);">Aucune commune trouvée</td></tr>
+                            <tr><td colspan="5" style="padding:32px; text-align:center; color:var(--text-muted); font-size:13px;">Aucune commune trouvée</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -375,44 +483,47 @@
                     <div style="font-family:'Montserrat'; font-size:30px; font-weight:800; color:var(--text);">Localités</div>
                     <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">{{ $localites->total() }} localité(s) au total</div>
                 </div>
-                <button onclick="openFormModal('modal-localite')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--primary); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer;">
-                    <i class="fa-solid fa-plus"></i> Ajouter
-                </button>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    @include('PageAdmi.partials.recherche_onglet', ['placeholder' => 'une localité'])
+                    <button onclick="openFormModal('modal-localite')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--primary); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer;">
+                        <i class="fa-solid fa-plus"></i> Ajouter
+                    </button>
+                </div>
             </div>
-            <div style="background:var(--surface); border-radius:14px; box-shadow:var(--card-shadow); padding:20px; overflow-x:auto;">
+            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
-                        <tr style="border-bottom:2px solid var(--border);">
-                            <th style="text-align:left; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Nom</th>
-                            <th style="text-align:left; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Commune</th>
-                            <th style="text-align:right; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Superficie</th>
-                            <th style="text-align:right; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Population</th>
-                            <th style="text-align:center; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Actions</th>
+                        <tr style="background:var(--surface2); text-align:left;">
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Nom</th>
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Commune</th>
+                            <th style="text-align:right; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Superficie</th>
+                            <th style="text-align:right; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Population</th>
+                            <th style="text-align:center; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($localites as $l)
-                            <tr style="border-bottom:1px solid var(--border2); transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
-                                <td style="padding:10px 12px; font-weight:500; color:var(--text);">{{ $l->nom }}</td>
-                                <td style="padding:10px 12px; color:var(--text-dim);">{{ $l->commune->nom ?? '—' }}</td>
-                                <td style="padding:10px 12px; text-align:right; color:var(--text-dim);">{{ $l->superficie ?? '—' }}</td>
-                                <td style="padding:10px 12px; text-align:right; color:var(--text-dim);">{{ $l->taille_population ?? '—' }}</td>
-                                <td style="padding:10px 12px; text-align:center;">
+                            <tr style="border-bottom:1px solid var(--border2);">
+                                <td style="padding:12px 16px; font-weight:500; color:var(--text);">{{ $l->nom }}</td>
+                                <td style="padding:12px 16px; color:var(--text-dim);">{{ $l->commune->nom ?? '—' }}</td>
+                                <td style="padding:12px 16px; text-align:right; color:var(--text-dim);">{{ $l->superficie ?? '—' }}</td>
+                                <td style="padding:12px 16px; text-align:right; color:var(--text-dim);">{{ $l->taille_population ?? '—' }}</td>
+                                <td style="padding:12px 16px; text-align:center;">
                                     <button type="button" class="btn-voir" data-entity="localite" data-id="{{ $l->id }}"
-                                        data-values="{{ json_encode($l->only(['nom','commune_id','superficie','taille_population','nbre_menage','nbre_homme','nbre_femme','latitude','longitude'])) }}"
-                                        style="background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:13px; padding:4px 8px;" title="Consulter"><i class="fa-solid fa-eye"></i></button>
+                                        data-values="{{ json_encode(array_merge($l->only(['nom','commune_id','superficie','taille_population','nbre_menage','nbre_homme','nbre_femme','latitude','longitude']), ['documents' => $docsParLocalite[$l->id] ?? []])) }}"
+                                        style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--text); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Consulter"><i class="fa-solid fa-eye"></i></button>
                                     <button type="button" class="btn-edit" data-entity="localite" data-id="{{ $l->id }}"
                                         data-values="{{ json_encode($l->only(['nom','commune_id','superficie','taille_population','nbre_menage','nbre_homme','nbre_femme','latitude','longitude'])) }}"
-                                        style="background:none; border:none; color:var(--primary); cursor:pointer; font-size:13px; padding:4px 8px;" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                                        style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--primary); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Modifier"><i class="fa-solid fa-pen"></i></button>
                                     <form action="{{ route('donnees.destroyLocalite', $l) }}" method="POST" style="display:inline-block;" onsubmit="confirmerSuppression(event, 'localite', {{ $l->id }}, @js($l->nom));">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:13px; padding:4px 8px;" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                                        <button type="submit" style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--red); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
                                     </form>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" style="padding:24px; text-align:center; color:var(--text-muted);">Aucune localité trouvée</td></tr>
+                            <tr><td colspan="5" style="padding:32px; text-align:center; color:var(--text-muted); font-size:13px;">Aucune localité trouvée</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -428,26 +539,36 @@
                     <div style="font-family:'Montserrat'; font-size:30px; font-weight:800; color:var(--text);">Secteurs</div>
                     <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">{{ $secteurs->total() }} secteur(s) au total</div>
                 </div>
-                <button onclick="openFormModal('modal-secteur')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--primary); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer;">
-                    <i class="fa-solid fa-plus"></i> Ajouter
-                </button>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    @include('PageAdmi.partials.recherche_onglet', ['placeholder' => 'un secteur'])
+                    <button onclick="openFormModal('modal-secteur')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--primary); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer;">
+                        <i class="fa-solid fa-plus"></i> Ajouter
+                    </button>
+                </div>
             </div>
-            <div style="background:var(--surface); border-radius:14px; box-shadow:var(--card-shadow); padding:20px; overflow-x:auto;">
+            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
-                        <tr style="border-bottom:2px solid var(--border);">
-                            <th style="text-align:left; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Nom</th>
-                            <th style="text-align:center; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Actions</th>
+                        <tr style="background:var(--surface2); text-align:left;">
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Nom</th>
+                            <th style="text-align:center; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($secteurs as $s)
-                            <tr style="border-bottom:1px solid var(--border2); transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
-                                <td style="padding:10px 12px; font-weight:500; color:var(--text);">{{ $s->nom }}</td>
-                                <td style="padding:10px 12px; text-align:center;">
+                            <tr style="border-bottom:1px solid var(--border2);">
+                                <td style="padding:12px 16px; font-weight:500; color:var(--text);">{{ $s->nom }}</td>
+                                <td style="padding:12px 16px; text-align:center;">
                                     <button type="button" class="btn-voir" data-entity="secteur" data-id="{{ $s->id }}"
-                                        data-values="{{ json_encode($s->only(['nom'])) }}"
-                                        style="background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:13px; padding:4px 8px;" title="Consulter"><i class="fa-solid fa-eye"></i></button>
+                                        data-values="{{ json_encode(array_merge($s->only(['nom']), [
+                                            'indicateurs' => $s->indicateurs->map(fn ($ind) => [
+                                                'id' => $ind->id,
+                                                'nom' => $ind->nom_indicateur,
+                                                'unites' => $ind->unites,
+                                                'description' => $ind->description,
+                                            ])->values()->all(),
+                                        ])) }}"
+                                        style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--text); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Consulter"><i class="fa-solid fa-eye"></i></button>
                                     <button type="button" class="btn-edit" data-entity="secteur" data-id="{{ $s->id }}"
                                         data-values="{{ json_encode(array_merge($s->only(['nom']), [
                                             'indicateurs' => $s->indicateurs->map(fn ($ind) => [
@@ -457,16 +578,16 @@
                                                 'description' => $ind->description,
                                             ])->values()->all(),
                                         ])) }}"
-                                        style="background:none; border:none; color:var(--primary); cursor:pointer; font-size:13px; padding:4px 8px;" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                                        style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--primary); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Modifier"><i class="fa-solid fa-pen"></i></button>
                                     <form action="{{ route('donnees.destroySecteur', $s) }}" method="POST" style="display:inline-block;" onsubmit="confirmerSuppression(event, 'secteur', {{ $s->id }}, @js($s->nom));">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:13px; padding:4px 8px;" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                                        <button type="submit" style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--red); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
                                     </form>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="2" style="padding:24px; text-align:center; color:var(--text-muted);">Aucun secteur trouvé</td></tr>
+                            <tr><td colspan="2" style="padding:32px; text-align:center; color:var(--text-muted); font-size:13px;">Aucun secteur trouvé</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -482,29 +603,32 @@
                     <div style="font-family:'Montserrat'; font-size:30px; font-weight:800; color:var(--text);">Infrastructures</div>
                     <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">{{ $infrastructures->total() }} infrastructure(s) au total</div>
                 </div>
-                <button onclick="openFormModal('modal-infrastructure')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--primary); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer;">
-                    <i class="fa-solid fa-plus"></i> Ajouter
-                </button>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    @include('PageAdmi.partials.recherche_onglet', ['placeholder' => 'une infrastructure'])
+                    <button onclick="openFormModal('modal-infrastructure')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--primary); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer;">
+                        <i class="fa-solid fa-plus"></i> Ajouter
+                    </button>
+                </div>
             </div>
-            <div style="background:var(--surface); border-radius:14px; box-shadow:var(--card-shadow); padding:20px; overflow-x:auto;">
+            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
-                        <tr style="border-bottom:2px solid var(--border);">
-                            <th style="text-align:left; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Nom</th>
-                            <th style="text-align:left; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Type</th>
-                            <th style="text-align:left; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">inplantation</th>
-                            <th style="text-align:left; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Secteur</th>
-                            <th style="text-align:left; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">État</th>
-                            <th style="text-align:center; padding:10px 12px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Actions</th>
+                        <tr style="background:var(--surface2); text-align:left;">
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Nom</th>
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Type</th>
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">inplantation</th>
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Secteur</th>
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">État</th>
+                            <th style="text-align:center; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($infrastructures as $i)
-                            <tr style="border-bottom:1px solid var(--border2); transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
-                                <td style="padding:10px 12px; font-weight:500; color:var(--text);">{{ $i->nom }}</td>
-                                <td style="padding:10px 12px; color:var(--text-dim);">{{ $i->type_infrastructure ?? '—' }}</td>
+                            <tr style="border-bottom:1px solid var(--border2);">
+                                <td style="padding:12px 16px; font-weight:500; color:var(--text);">{{ $i->nom }}</td>
+                                <td style="padding:12px 16px; color:var(--text-dim);">{{ $i->type_infrastructure ?? '—' }}</td>
                                 {{-- Rattachement : le niveau effectivement choisi (localités > commune > département) --}}
-                                <td style="padding:10px 12px; color:var(--text-dim);">
+                                <td style="padding:12px 16px; color:var(--text-dim);">
                                     @if($i->localitesCouvertes->isNotEmpty())
                                         <span style="display:inline-block; background:var(--primary-lt); color:var(--primary); font-size:10px; font-weight:700; border-radius:20px; padding:2px 8px; margin-bottom:4px;">
                                             Localités ({{ $i->localitesCouvertes->count() }})
@@ -517,9 +641,9 @@
                                         <span style="font-weight:600; color:var(--text);">Département :</span> {{ $i->departement?->nom ?? $i->commune?->departement?->nom ?? '—' }}
                                     @endif
                                 </td>
-                                <td style="padding:10px 12px; color:var(--text-dim);">{{ $i->secteur?->nom ?? '—' }}</td>
-                                <td style="padding:10px 12px; color:var(--text-dim);">{{ $i->etat_lieu ? str_replace('_', ' ', $i->etat_lieu) : '—' }}</td>
-                                <td style="padding:10px 12px; text-align:center;">
+                                <td style="padding:12px 16px; color:var(--text-dim);">{{ $i->secteur?->nom ?? '—' }}</td>
+                                <td style="padding:12px 16px; color:var(--text-dim);">{{ $i->etat_lieu ? str_replace('_', ' ', $i->etat_lieu) : '—' }}</td>
+                                <td style="padding:12px 16px; text-align:center;">
                                     {{-- Valeurs passées à la modal de consultation : champs simples + IDs des localités couvertes + population totale actuelle + valeurs des indicateurs --}}
                                     <button type="button" class="btn-voir" data-entity="infrastructure" data-id="{{ $i->id }}"
                                         data-values="{{ json_encode(array_merge($i->only(['nom','description','type_infrastructure','departement_id','commune_id','secteur_id','etat_lieu','latitude','longitude']), [
@@ -527,31 +651,138 @@
                                             'localites' => $i->localitesCouvertes->pluck('id')->all(),
                                             'population_couverte' => $i->localitesCouvertes->sum('pivot.nbre_population_couvert') ?: null,
                                             'indicateurs_valeurs' => $i->indicateurs->mapWithKeys(fn ($ind) => [$ind->id => $ind->pivot->valeur])->all(),
+                                            'documents' => $docsParInfrastructure[$i->id] ?? [],
+                                            'photos' => $i->photos->map(fn ($p) => ['src' => route('photos.apercu', $p), 'nom' => $p->nom])->values()->all(),
                                         ])) }}"
-                                        style="background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:13px; padding:4px 8px;" title="Consulter"><i class="fa-solid fa-eye"></i></button>
-                                    {{-- Valeurs passées à la modal d'édition : champs simples + IDs des localités couvertes + population totale actuelle + valeurs des indicateurs --}}
+                                        style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--text); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Consulter"><i class="fa-solid fa-eye"></i></button>
+                                    {{-- Valeurs passées à la modal d'édition : champs simples + IDs des localités couvertes + population totale actuelle + valeurs des indicateurs + photos --}}
                                     <button type="button" class="btn-edit" data-entity="infrastructure" data-id="{{ $i->id }}"
                                         data-values="{{ json_encode(array_merge($i->only(['nom','description','type_infrastructure','departement_id','commune_id','secteur_id','etat_lieu','latitude','longitude']), [
                                             'date_creation' => $i->date_creation?->format('Y-m-d'),
                                             'localites' => $i->localitesCouvertes->pluck('id')->all(),
                                             'population_couverte' => $i->localitesCouvertes->sum('pivot.nbre_population_couvert') ?: null,
                                             'indicateurs_valeurs' => $i->indicateurs->mapWithKeys(fn ($ind) => [$ind->id => $ind->pivot->valeur])->all(),
+                                            'photos' => $i->photos->map(fn ($p) => ['id' => $p->id, 'src' => route('photos.apercu', $p), 'nom' => $p->nom])->values()->all(),
                                         ])) }}"
-                                        style="background:none; border:none; color:var(--primary); cursor:pointer; font-size:13px; padding:4px 8px;" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                                        style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--primary); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Modifier"><i class="fa-solid fa-pen"></i></button>
                                     <form action="{{ route('donnees.destroyInfrastructure', $i) }}" method="POST" style="display:inline-block;" onsubmit="confirmerSuppression(event, 'infrastructure', {{ $i->id }}, @js($i->nom));">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:13px; padding:4px 8px;" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                                        <button type="submit" style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--red); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
                                     </form>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" style="padding:24px; text-align:center; color:var(--text-muted);">Aucune infrastructure trouvée</td></tr>
+                            <tr><td colspan="6" style="padding:32px; text-align:center; color:var(--text-muted); font-size:13px;">Aucune infrastructure trouvée</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
             <div style="margin-top:16px;">{{ $infrastructures->withQueryString()->links() }}</div>
+
+        {{-- ═══════════════════════════════════════════════════════════ --}}
+        {{-- ONGLET DOCUMENTS (fichiers Excel / Word / PDF)            --}}
+        {{-- ═══════════════════════════════════════════════════════════ --}}
+        @elseif($tab === 'documents')
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <div>
+                    <div style="font-family:'Montserrat'; font-size:30px; font-weight:800; color:var(--text);">Documents</div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">{{ $documents->total() }} document(s) importé(s)</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    @include('PageAdmi.partials.recherche_onglet', ['placeholder' => 'un document'])
+                    <button onclick="openFormModal('modal-document')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--primary); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer;">
+                        <i class="fa-solid fa-upload"></i> Importer
+                    </button>
+                </div>
+            </div>
+            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
+                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                    <thead>
+                        <tr style="background:var(--surface2); text-align:left;">
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Titre</th>
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Type</th>
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Rattachement</th>
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Fichier</th>
+                            <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Date</th>
+                            <th style="text-align:center; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($documents as $doc)
+                            @php
+                                // Icône selon le type de fichier
+                                $icone = match ($doc->extension) {
+                                    'pdf' => 'fa-solid fa-file-pdf',
+                                    'doc', 'docx' => 'fa-solid fa-file-word',
+                                    'xls', 'xlsx' => 'fa-solid fa-file-excel',
+                                    default => 'fa-solid fa-file',
+                                };
+                                $couleur = match ($doc->extension) {
+                                    'pdf' => '#c0392b',
+                                    'doc', 'docx' => '#2471a3',
+                                    'xls', 'xlsx' => '#1e8449',
+                                    default => 'var(--text-muted)',
+                                };
+                                // Rattachement "arrêt au niveau" : localité > commune > département > région
+                                $rattachement = $doc->localite?->nom
+                                    ? ('Localité : ' . $doc->localite->nom)
+                                    : ($doc->commune?->nom
+                                        ? ('Commune : ' . $doc->commune->nom)
+                                        : ($doc->departement?->nom
+                                            ? ('Département : ' . $doc->departement->nom)
+                                            : ($doc->region?->nom
+                                                ? ('Région : ' . $doc->region->nom)
+                                                : ($doc->infrastructure?->nom
+                                                    ? ('Infrastructure : ' . $doc->infrastructure->nom)
+                                                    : '— Global —'))));
+                                $taille = $doc->taille
+                                    ? (round($doc->taille / 1024, 1) . ' Ko')
+                                    : '—';
+                            @endphp
+                            <tr style="border-bottom:1px solid var(--border2);">
+                                <td style="padding:12px 16px; font-weight:500; color:var(--text);">{{ $doc->titre }}</td>
+                                <td style="padding:12px 16px;">
+                                    <span style="display:inline-block; background:var(--surface2); color:var(--text-dim); font-size:10px; font-weight:700; text-transform:uppercase; border-radius:20px; padding:2px 8px;">{{ $doc->type_document }}</span>
+                                </td>
+                                <td style="padding:12px 16px; color:var(--text-dim);">{{ $rattachement }}</td>
+                                <td style="padding:12px 16px; color:var(--text-dim);">
+                                    <span style="color:{{ $couleur }}; margin-right:6px;"><i class="{{ $icone }}"></i></span>
+                                    {{ $doc->nom_fichier }}
+                                    <span style="display:block; font-size:11px; color:var(--text-muted);">{{ $taille }}</span>
+                                </td>
+                                <td style="padding:12px 16px; color:var(--text-dim);">{{ $doc->created_at?->format('d/m/Y') }}</td>
+                                <td style="padding:12px 16px; text-align:center;">
+                                    {{-- Consultation avec aperçu intégré --}}
+                                    <button type="button" class="btn-doc-voir"
+                                        data-titre="{{ $doc->titre }}"
+                                        data-type="{{ $doc->type_document }}"
+                                        data-description="{{ $doc->description ?? '' }}"
+                                        data-fichier="{{ $doc->nom_fichier }}"
+                                        data-taille="{{ $taille }}"
+                                        data-extension="{{ $doc->extension }}"
+                                        data-rattachement="{{ $rattachement }}"
+                                        data-apercu="{{ route('documents.preview', $doc) }}"
+                                        data-telecharger="{{ route('documents.download', $doc) }}"
+                                        style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--text); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Consulter"><i class="fa-solid fa-eye"></i></button>
+                                    {{-- Téléchargement direct --}}
+                                    <a href="{{ route('documents.download', $doc) }}"
+                                       style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--primary); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px; text-decoration:none;" title="Télécharger"><i class="fa-solid fa-download"></i></a>
+                                    {{-- Suppression : confirmation avec analyse d'impact (comme les autres entités) --}}
+                                    <form action="{{ route('documents.destroy', $doc) }}" method="POST" style="display:inline-block;" onsubmit="confirmerSuppression(event, 'document', {{ $doc->id }}, @js($doc->titre));">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--red); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" style="padding:32px; text-align:center; color:var(--text-muted); font-size:13px;">Aucun document importé pour le moment.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:16px;">{{ $documents->withQueryString()->links() }}</div>
         @endif
 
     </main>
@@ -561,45 +792,6 @@
 {{-- ══════════════════════════════════════════════════════════════ --}}
 {{-- MODALS DE CRÉATION — 6 formulaires, un par entité           --}}
 {{-- ══════════════════════════════════════════════════════════════ --}}
-
-<style>
-    .modal-overlay { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.45); backdrop-filter:blur(3px); justify-content:center; align-items:center; }
-    .modal-overlay.active { display:flex; }
-    .modal-card { background:var(--surface); border-radius:16px; padding:0; width:95%; max-width:680px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.25); position:relative; }
-    .modal-card-header { display:flex; justify-content:space-between; align-items:center; padding:20px 28px 16px; border-bottom:1px solid var(--border); }
-    .modal-card-header h3 { margin:0; font-family:'Syne',sans-serif; font-size:18px; font-weight:700; color:var(--text); }
-    .modal-card-body { padding:20px 28px 24px; }
-    .modal-close { background:none; border:none; font-size:20px; color:var(--text-muted); cursor:pointer; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:.15s; }
-    .modal-close:hover { background:var(--surface2); color:var(--text); }
-    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-    .field-group { margin-bottom:14px; }
-    .field-group label { display:block; font-size:12px; font-weight:600; color:var(--text-dim); margin-bottom:5px; }
-    .field-group input,
-    .field-group select,
-    .field-group textarea {
-        width:100%; padding:9px 12px; font-size:13px; font-family:'DM Sans',sans-serif;
-        border:1px solid var(--border); border-radius:10px; background:var(--surface2);
-        color:var(--text); outline:none; transition:border .2s, box-shadow .2s; box-sizing:border-box;
-    }
-    .field-group input:focus,
-    .field-group select:focus,
-    .field-group textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(45,155,95,.12); }
-    .field-group textarea { resize:vertical; min-height:60px; }
-    .btn-submit { display:inline-flex; align-items:center; gap:6px; padding:10px 22px; background:var(--primary); color:#fff; border:none; border-radius:10px; font-size:13px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer; transition:.15s; }
-    .btn-submit:hover { filter:brightness(1.08); }
-    .btn-cancel { display:inline-flex; align-items:center; gap:6px; padding:10px 22px; background:var(--surface2); color:var(--text-dim); border:1px solid var(--border); border-radius:10px; font-size:13px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer; transition:.15s; }
-    .btn-cancel:hover { border-color:var(--text-muted); color:var(--text); }
-
-    /* Popup de succès */
-    .success-popup { display:none; position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,.4); backdrop-filter:blur(3px); justify-content:center; align-items:center; }
-    .success-popup.active { display:flex; animation:fadeIn .25s ease; }
-    .success-card { background:var(--surface); border-radius:16px; padding:32px 40px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.25); }
-    .success-icon { width:56px; height:56px; border-radius:50%; background:#e6f9ee; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
-    .success-icon i { font-size:24px; color:#2d9b5f; }
-    .success-card h4 { margin:0 0 6px; font-family:'Syne',sans-serif; font-size:18px; color:var(--text); }
-    .success-card p { margin:0 0 20px; font-size:13px; color:var(--text-dim); }
-    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
-</style>
 
 {{-- ═══ MODAL RÉGION ═══ --}}
 <div id="modal-region" class="modal-overlay" onclick="if(event.target===this) closeFormModal('modal-region')">
@@ -630,7 +822,7 @@
                 <div class="field-group"><label>Longitude</label><input type="text" name="longitude" placeholder="ex: -17.4467"></div>
                 {{-- Message d'aide : la somme hommes + femmes ne doit pas dépasser la population.
                      Affiché automatiquement par le JS (majMessageSommePop) quand la somme excède. --}}
-                <div data-msg-somme style="display:none; padding:10px 12px; border-radius:8px; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; font-size:12px; font-weight:600; margin-bottom:12px;">
+                <div data-msg-somme style="display:none; padding:12px 16px; border-radius:8px; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; font-size:12px; font-weight:600; margin-bottom:12px;">
                     <i class="fa-solid fa-triangle-exclamation"></i> La somme des hommes et des femmes (<span data-somme>0</span>) ne doit pas être supérieure à la population (<span data-pop>0</span>).
                 </div>
                 <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
@@ -678,7 +870,7 @@
                 </div>
                 <div class="field-group"><label>Longitude</label><input type="text" name="longitude"></div>
                 {{-- Message d'aide : la somme hommes + femmes ne doit pas dépasser la population --}}
-                <div data-msg-somme style="display:none; padding:10px 12px; border-radius:8px; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; font-size:12px; font-weight:600; margin-bottom:12px;">
+                <div data-msg-somme style="display:none; padding:12px 16px; border-radius:8px; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; font-size:12px; font-weight:600; margin-bottom:12px;">
                     <i class="fa-solid fa-triangle-exclamation"></i> La somme des hommes et des femmes (<span data-somme>0</span>) ne doit pas être supérieure à la population (<span data-pop>0</span>).
                 </div>
                 <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
@@ -740,7 +932,7 @@
                 </div>
                 <div class="field-group"><label>Longitude</label><input type="text" name="longitude"></div>
                 {{-- Message d'aide : la somme hommes + femmes ne doit pas dépasser la population --}}
-                <div data-msg-somme style="display:none; padding:10px 12px; border-radius:8px; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; font-size:12px; font-weight:600; margin-bottom:12px;">
+                <div data-msg-somme style="display:none; padding:12px 16px; border-radius:8px; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; font-size:12px; font-weight:600; margin-bottom:12px;">
                     <i class="fa-solid fa-triangle-exclamation"></i> La somme des hommes et des femmes (<span data-somme>0</span>) ne doit pas être supérieure à la population (<span data-pop>0</span>).
                 </div>
                 <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
@@ -807,7 +999,7 @@
                 </div>
                 <div class="field-group"><label>Longitude</label><input type="text" name="longitude"></div>
                 {{-- Message d'aide : la somme hommes + femmes ne doit pas dépasser la population --}}
-                <div data-msg-somme style="display:none; padding:10px 12px; border-radius:8px; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; font-size:12px; font-weight:600; margin-bottom:12px;">
+                <div data-msg-somme style="display:none; padding:12px 16px; border-radius:8px; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; font-size:12px; font-weight:600; margin-bottom:12px;">
                     <i class="fa-solid fa-triangle-exclamation"></i> La somme des hommes et des femmes (<span data-somme>0</span>) ne doit pas être supérieure à la population (<span data-pop>0</span>).
                 </div>
                 <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
@@ -865,13 +1057,19 @@
             <button class="modal-close" onclick="closeFormModal('modal-infrastructure')"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="modal-card-body">
-            <form method="POST" action="{{ route('donnees.storeInfrastructure') }}">
+            <form method="POST" action="{{ route('donnees.storeInfrastructure') }}" enctype="multipart/form-data">
                 @csrf
                 <div class="field-row">
                     <div class="field-group"><label>Nom *</label><input type="text" name="nom" required></div>
                     <div class="field-group"><label>Type d'infrastructure</label><input type="text" name="type_infrastructure"></div>
                 </div>
                 <div class="field-group"><label>Description</label><textarea name="description" rows="2"></textarea></div>
+                {{-- Photos : sélection multiple, images 5 Mo max chacune (10 max) --}}
+                <div class="field-group">
+                    <label>Photos <span style="font-weight:400; color:var(--text-muted);">(facultatif — plusieurs images JPG/PNG/GIF/WebP, 5 Mo max chacune)</span></label>
+                    <input type="file" name="photos[]" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">10 images maximum par infrastructure.</div>
+                </div>
                 {{-- ═══ TERRITOIRE : région (filtre) → département OU commune OU localités ═══ --}}
                 {{-- Filtre Région : sert uniquement à faciliter la recherche du département --}}
                 <div class="field-group">
@@ -966,6 +1164,137 @@
     </div>
 </div>
 
+{{-- ═══ MODAL D'IMPORTATION D'UN DOCUMENT ── fichier Excel/Word/PDF ═══
+     Upload d'un fichier (10 Mo max) + métadonnées + rattachement territorial
+     "arrêt au niveau" (localité > commune > département > région), comme les
+     infrastructures ; rattachement optionnel à une infrastructure. --}}
+<div id="modal-document" class="modal-overlay" onclick="if(event.target===this) closeFormModal('modal-document')">
+    <div class="modal-card" style="max-width:700px;">
+        <div class="modal-card-header">
+            <h3><i class="fa-solid fa-upload" style="color:var(--primary); margin-right:8px;"></i> Importer un document</h3>
+            <button class="modal-close" onclick="closeFormModal('modal-document')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-card-body">
+            <form method="POST" action="{{ route('donnees.storeDocument') }}" enctype="multipart/form-data">
+                @csrf
+
+                {{-- Fichier --}}
+                <div class="field-group">
+                    <label>Fichier * <span style="font-weight:400; color:var(--text-muted);">(PDF, Word, Excel — 10 Mo max)</span></label>
+                    <input type="file" name="fichier" required accept=".pdf,.doc,.docx,.xls,.xlsx,.csv">
+                </div>
+                <div class="field-row">
+                    <div class="field-group"><label>Titre *</label><input type="text" name="titre" required maxlength="255" placeholder="Ex : Rapport PDC Kaolack 2025"></div>
+                    <div class="field-group">
+                        <label>Type de document *</label>
+                        <select name="type_document" required style="width:100%; padding:9px 12px; font-size:13px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--text); cursor:pointer;">
+                            <option value="">— Choisir un type —</option>
+                            <option value="rapport">Rapport</option>
+                            <option value="fiche">Fiche</option>
+                            <option value="document">Document</option>
+                            <option value="PDC">PDC</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="field-group"><label>Description</label><textarea name="description" rows="2" maxlength="1000" placeholder="Objet, périmètre, source… (facultatif)"></textarea></div>
+
+                {{-- ═══ Rattachement territorial (arrêt au niveau) ═══ --}}
+                <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin:16px 0 10px;">
+                    <i class="fa-solid fa-link" style="margin-right:4px;"></i> Rattachement territorial <span style="font-weight:400; text-transform:none;">(facultatif — s'arrêter au niveau voulu)</span>
+                </div>
+                <div class="field-row">
+                    <div class="field-group">
+                        <label>Région</label>
+                        <select name="region_id" id="doc-region" onchange="majDepartementsDoc()">
+                            <option value="">— Aucune région —</option>
+                            @foreach($allRegions as $rg)
+                                <option value="{{ $rg->id }}">{{ $rg->nom }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="field-group">
+                        <label>Département</label>
+                        <select name="departement_id" id="doc-departement" onchange="choisirDepartementDoc()">
+                            <option value="">— Aucun département —</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="field-row">
+                    <div class="field-group">
+                        <label>Commune</label>
+                        <select name="commune_id" id="doc-commune" onchange="choisirCommuneDoc()">
+                            <option value="">— Aucune commune —</option>
+                        </select>
+                    </div>
+                    <div class="field-group">
+                        <label>Localité</label>
+                        <select name="localite_id" id="doc-localite">
+                            <option value="">— Aucune localité —</option>
+                        </select>
+                    </div>
+                </div>
+
+                {{-- Rattachement optionnel à une infrastructure --}}
+                <div class="field-group">
+                    <label>Infrastructure liée <span style="font-weight:400; color:var(--text-muted);">(facultatif, indépendant du territoire)</span></label>
+                    <select name="infrastructure_id" style="width:100%; padding:9px 12px; font-size:13px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--text); cursor:pointer;">
+                        <option value="">— Aucune infrastructure —</option>
+                        @foreach($allInfrastructures as $inf)
+                            <option value="{{ $inf->id }}">{{ $inf->nom }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
+                    <button type="button" class="btn-cancel" onclick="closeFormModal('modal-document')">Annuler</button>
+                    <button type="submit" class="btn-submit"><i class="fa-solid fa-upload"></i> Importer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- ═══ MODAL DE CONSULTATION D'UN DOCUMENT AVEC APERÇU INTÉGRÉ ═══
+     Metadonnées + bouton télécharger + aperçu direct dans l'app :
+     PDF affiché dans un iframe ; Word/Excel (non rendables par le
+     navigateur) → message explicatif + téléchargement. --}}
+<div class="modal-overlay" id="modal-doc-consulter">
+    <div class="modal-card" style="max-width:760px;">
+        <div class="modal-card-header">
+            <h3 id="doc-voir-titre">Consulter le document</h3>
+            <button type="button" class="modal-close" onclick="closeFormModal('modal-doc-consulter')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-card-body">
+            <div id="doc-voir-meta" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(190px,1fr)); gap:10px 20px; margin-bottom:16px;"></div>
+
+            {{-- Actions : téléchargement + indice sur l'aperçu --}}
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+                <a id="doc-voir-download" href="#" class="btn-submit" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-download"></i> Télécharger
+                </a>
+                <span id="doc-voir-format" style="font-size:12px; color:var(--text-muted);"></span>
+            </div>
+
+            {{-- Aperçu intégré : iframe pour PDF, sinon placeholder --}}
+            <div id="doc-apent-container" style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; overflow:hidden;">
+                <iframe id="doc-preview-frame" src="about:blank" title="Aperçu du document" style="width:100%; height:480px; border:none; display:none;"></iframe>
+                <div id="doc-preview-fallback" style="display:none; text-align:center; padding:60px 24px;">
+                    <i class="fa-solid fa-file-circle-question" style="font-size:40px; color:var(--text-muted);"></i>
+                    <div style="font-size:15px; font-weight:600; color:var(--text); margin-top:12px;">Aperçu intégré non disponible</div>
+                    <div style="font-size:13px; color:var(--text-dim); margin-top:6px; line-height:1.5;">
+                        Le format Word/Excel ne peut pas être rendu par le navigateur.<br>
+                        Utilisez le bouton <strong>Télécharger</strong> pour ouvrir le fichier dans son application.
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
+                <button type="button" class="btn-cancel" onclick="closeFormModal('modal-doc-consulter')">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- ═══ MODAL D'ÉDITION GÉNÉRIQUE ═══
      Une seule modal pour les 6 entités : le contenu des champs est généré
      par JavaScript selon le schéma de l'entité (EDIT_SCHEMAS) et prérempli
@@ -978,7 +1307,8 @@
         </div>
         <div class="modal-card-body">
             {{-- Le formulaire soumet en PUT via le spoofing _method (HTML ne connaît que GET/POST) --}}
-            <form id="edit-form" method="POST" action="">
+            {{-- enctype multipart requis pour l'upload de photos lors de la modification d'une infrastructure --}}
+            <form id="edit-form" method="POST" action="" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="_method" value="PUT">
                 <div id="edit-fields"></div>
@@ -1028,10 +1358,10 @@
             <ul id="del-liste" style="margin:0; padding-left:20px; line-height:2;"></ul>
 
             {{-- Message d'avertissement (ex. localité : les infrastructures restent) --}}
-            <p id="del-note" style="display:none; margin-top:12px; padding:10px 12px; background:#fff8e1; border-left:4px solid #f0a500; border-radius:4px; font-size:13px;"></p>
+            <p id="del-note" style="display:none; margin-top:12px; padding:12px 16px; background:#fff8e1; border-left:4px solid #f0a500; border-radius:4px; font-size:13px;"></p>
 
             {{-- Message rouge + bouton désactivé si la suppression est impossible (secteur utilisé) --}}
-            <p id="del-blocage" style="display:none; margin-top:12px; padding:10px 12px; background:#fdecea; border-left:4px solid #c0392b; border-radius:4px; font-size:13px; color:#c0392b; font-weight:600;"></p>
+            <p id="del-blocage" style="display:none; margin-top:12px; padding:12px 16px; background:#fdecea; border-left:4px solid #c0392b; border-radius:4px; font-size:13px; color:#c0392b; font-weight:600;"></p>
 
             <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
                 <button type="button" class="btn-cancel" onclick="fermerModalSuppression()">Annuler</button>
@@ -1520,7 +1850,7 @@
             F.txt('latitude', 'Latitude', v.latitude),
             F.txt('longitude', 'Longitude', v.longitude),
             // Message d'aide : la somme hommes + femmes ne doit pas dépasser la population
-            `<div data-msg-somme style="display:none; grid-column:1/-1; padding:10px 12px; border-radius:8px; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; font-size:12px; font-weight:600;">
+            `<div data-msg-somme style="display:none; grid-column:1/-1; padding:12px 16px; border-radius:8px; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; font-size:12px; font-weight:600;">
                 <i class="fa-solid fa-triangle-exclamation"></i> La somme des hommes et des femmes (<span data-somme>0</span>) ne doit pas être supérieure à la population (<span data-pop>0</span>).
             </div>`,
         ];
@@ -1647,6 +1977,29 @@
                 v.etat_lieu, ''),
             F.txt('latitude', 'Latitude', v.latitude),
             F.txt('longitude', 'Longitude', v.longitude),
+
+            // ── Photos : vignettes existantes (cocher pour supprimer) + ajout ──
+            (() => {
+                // Chaque vignette affiche l'aperçu, le nom du fichier et une case
+                // "Supprimer" (photos_supprimer[]) cochée = photo retirée à l'enregistrement.
+                const existantes = (v.photos || []).map(p => `
+                    <div style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:8px; text-align:center;">
+                        <img src="${escHtml(p.src)}" alt="${escHtml(p.nom)}" style="width:100%; height:80px; object-fit:cover; border-radius:7px; display:block; margin-bottom:6px;">
+                        <div style="font-size:11px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:6px;" title="${escHtml(p.nom)}">${escHtml(p.nom)}</div>
+                        <label style="display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--red); cursor:pointer; font-weight:600;">
+                            <input type="checkbox" name="photos_supprimer[]" value="${p.id}"> Supprimer
+                        </label>
+                    </div>`).join('');
+                return `
+                    <div class="field-group" style="grid-column:1/-1;">
+                        <label>Photos <span style="font-weight:400; color:var(--text-muted);">(cochez pour supprimer une photo existante)</span></label>
+                        ${(v.photos || []).length
+                            ? `<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px;">${existantes}</div>`
+                            : `<div style="font-size:12px; color:var(--text-muted); font-style:italic; margin-bottom:10px;">Aucune photo actuellement.</div>`}
+                        <input type="file" name="photos[]" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Nouvelles photos : JPG/PNG/GIF/WebP, 5 Mo max chacune — 10 images maximum au total par infrastructure.</div>
+                    </div>`;
+            })()
         ].join('');
     }
 
@@ -1843,6 +2196,8 @@
             ['nbre_infrastructure', 'Infrastructures'],
             ['latitude', 'Latitude'],
             ['longitude', 'Longitude'],
+            // Documents rattachés (à ce niveau ou à un niveau inférieur)
+            ['documents', 'Documents liés', (arr) => Array.isArray(arr) && arr.length ? arr : null],
         ],
         departement: [
             ['nom', 'Nom'],
@@ -1854,6 +2209,7 @@
             ['nbre_femme', 'Femmes'],
             ['latitude', 'Latitude'],
             ['longitude', 'Longitude'],
+            ['documents', 'Documents liés', (arr) => Array.isArray(arr) && arr.length ? arr : null],
         ],
         commune: [
             ['nom', 'Nom'],
@@ -1865,6 +2221,7 @@
             ['nbre_femme', 'Femmes'],
             ['latitude', 'Latitude'],
             ['longitude', 'Longitude'],
+            ['documents', 'Documents liés', (arr) => Array.isArray(arr) && arr.length ? arr : null],
         ],
         localite: [
             ['nom', 'Nom'],
@@ -1876,9 +2233,18 @@
             ['nbre_femme', 'Femmes'],
             ['latitude', 'Latitude'],
             ['longitude', 'Longitude'],
+            ['documents', 'Documents liés', (arr) => Array.isArray(arr) && arr.length ? arr : null],
         ],
         secteur: [
             ['nom', 'Nom'],
+            // Indicateurs rattachés au secteur (créés avec lui)
+            ['indicateurs', 'Indicateurs', (arr) => {
+                if (!arr || arr.length === 0) return 'Aucun indicateur';
+                return arr.map(function(ind) {
+                    const unite = ind.unites ? ' (' + ind.unites + ')' : '';
+                    return '• ' + ind.nom + unite;
+                }).join('\n');
+            }],
         ],
         infrastructure: [
             ['nom', 'Nom'],
@@ -1904,6 +2270,10 @@
             }],
             ['latitude', 'Latitude'],
             ['longitude', 'Longitude'],
+            // Documents rattachés à cette infrastructure
+            ['documents', 'Documents liés', (arr) => Array.isArray(arr) && arr.length ? arr : null],
+            // Photos de l'infrastructure (galerie de vignettes)
+            ['photos', 'Photos', (arr) => Array.isArray(arr) && arr.length ? arr : null],
         ],
     };
 
@@ -1925,23 +2295,184 @@
 
         vue.forEach(function([cle, libelle, resolveur]) {
             let valeur = valeurs !== undefined ? valeurs[cle] : undefined;
-            // Valeur absente ou chaine vide -> on n'affiche pas la ligne
-            if (valeur === undefined || valeur === null || valeur === '') return;
 
-            // Résolveur optionnel : transforme un id/nombre en texte lisible
-            if (typeof resolveur === 'function') valeur = resolveur(valeur) || '—';
+            // Résolveur optionnel : transforme un id/nombre en texte lisible.
+            // Il peut aussi renvoyer null pour signifier "pas de ligne à afficher".
+            if (typeof resolveur === 'function') {
+                valeur = resolveur(valeur);
+                if (valeur === null || valeur === undefined || valeur === '') return;
+            } else if (valeur === undefined || valeur === null || valeur === '') {
+                return;
+            }
 
             const bloc = document.createElement('div');
-            bloc.innerHTML = `<div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">${escHtml(libelle)}</div>` +
-                `<div style="font-size:14px; color:var(--text); font-weight:500; margin-top:2px;">${escHtml(String(valeur))}</div>`;
+            const entete = `<div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">${escHtml(libelle)}</div>`;
+
+            if (Array.isArray(valeur)) {
+                // Liste composite : photos (vignettes) et/ou liens (documents).
+                bloc.innerHTML = entete;
+                const wrap = document.createElement('div');
+                wrap.style.cssText = 'margin-top:2px;';
+                let aRendu = false;
+                valeur.forEach(function(item) {
+                    if (item && item.src) {
+                        // Photo : vignette cliquable (zoom) + nom du fichier
+                        const fig = document.createElement('figure');
+                        fig.style.cssText = 'display:inline-block; margin:6px 10px 6px 0; text-align:center; vertical-align:top;';
+                        const img = document.createElement('img');
+                        img.src = item.src;
+                        img.alt = item.nom || 'Photo';
+                        img.loading = 'lazy';
+                        img.style.cssText = 'width:110px; height:110px; object-fit:cover; border-radius:10px; border:1px solid var(--border); cursor:zoom-in; background:var(--surface2);';
+                        img.onclick = function() { window.open(this.src, '_blank', 'noopener'); };
+                        fig.appendChild(img);
+                        if (item.nom) {
+                            const cap = document.createElement('figcaption');
+                            cap.textContent = item.nom;
+                            cap.title = item.nom;
+                            cap.style.cssText = 'font-size:11px; color:var(--text-muted); margin-top:4px; max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
+                            fig.appendChild(cap);
+                        }
+                        wrap.appendChild(fig);
+                        aRendu = true;
+                    } else if (item && item.lien) {
+                        // Document : lien vers l'aperçu ou le téléchargement selon le format
+                        const a = document.createElement('a');
+                        a.href = item.lien;
+                        if (item.lien.indexOf('/apercu') !== -1) {
+                            a.target = '_blank';
+                            a.rel = 'noopener';
+                        }
+                        a.textContent = '• ' + item.titre + ' — ' + item.type;
+                        a.style.cssText = 'display:block; color:var(--primary); text-decoration:none; margin:2px 0; cursor:pointer;';
+                        wrap.appendChild(a);
+                        aRendu = true;
+                    }
+                });
+                if (aRendu) bloc.appendChild(wrap);
+            } else {
+                bloc.innerHTML = entete +
+                    `<div style="font-size:14px; color:var(--text); font-weight:500; margin-top:2px;">${escHtml(String(valeur)).replace(/\n/g, '<br>')}</div>`;
+            }
+
             corps.appendChild(bloc);
         });
 
         openFormModal('modal-consulter');
     }
 
-    // Délégation de clic : bouton œil (.btn-voir) -> modal de consultation
+    // ═══ MODAL DOCUMENT — cascade "arrêt au niveau" du rattachement ═══
+    // (identique au principe des infrastructures : le niveau choisi annule
+    //  les niveaux supérieurs déjà remplis)
+
+    // Région choisie (ou vidée) → reconstruit la liste des départements
+    function majDepartementsDoc() {
+        const regionId = document.getElementById('doc-region').value;
+        const selDept = document.getElementById('doc-departement');
+        const selCommune = document.getElementById('doc-commune');
+        const selLoc = document.getElementById('doc-localite');
+
+        selDept.innerHTML = '<option value="">— Aucun département —</option>';
+        (regionId === ''
+            ? DB_DEPARTEMENTS
+            : DB_DEPARTEMENTS.filter(d => String(d.region_id) === regionId)
+        ).forEach(function(d) {
+            selDept.insertAdjacentHTML('beforeend', `<option value="${d.id}">${escHtml(d.nom)}</option>`);
+        });
+
+        // On repart de zéro sur la commune et la localité
+        selCommune.innerHTML = '<option value="">— Aucune commune —</option>';
+        selLoc.innerHTML = '<option value="">— Aucune localité —</option>';
+    }
+
+    // Département choisi → le rattachement retenu est le département :
+    // la région n'est plus retenue (niveau supérieur annulé)
+    function choisirDepartementDoc() {
+        const selDept = document.getElementById('doc-departement');
+        const deptId = selDept.value;
+        if (deptId !== '' && document.getElementById('doc-region')) {
+            document.getElementById('doc-region').value = '';
+        }
+
+        // Communes du département choisi ; localité remise à zéro
+        const selCommune = document.getElementById('doc-commune');
+        selCommune.innerHTML = '<option value="">— Aucune commune —</option>';
+        DB_COMMUNES.filter(c => String(c.departement_id) === deptId).forEach(function(c) {
+            selCommune.insertAdjacentHTML('beforeend', `<option value="${c.id}">${escHtml(c.nom)}</option>`);
+        });
+        document.getElementById('doc-localite').innerHTML = '<option value="">— Aucune localité —</option>';
+    }
+
+    // Commune choisie → le rattachement retenu est la commune :
+    // département et région annulés ; localités de la commune reconstruites
+    function choisirCommuneDoc() {
+        const selCommune = document.getElementById('doc-commune');
+        const communeId = selCommune.value;
+        if (communeId !== '') {
+            if (document.getElementById('doc-departement')) document.getElementById('doc-departement').value = '';
+            if (document.getElementById('doc-region')) document.getElementById('doc-region').value = '';
+        }
+
+        const selLoc = document.getElementById('doc-localite');
+        selLoc.innerHTML = '<option value="">— Aucune localité —</option>';
+        DB_LOCALITES.filter(l => String(l.commune_id) === communeId).forEach(function(l) {
+            selLoc.insertAdjacentHTML('beforeend', `<option value="${l.id}">${escHtml(l.nom)}</option>`);
+        });
+    }
+
+    // ═══ CONSULTATION D'UN DOCUMENT AVEC APERÇU INTÉGRÉ ═══
+    // Remplit les métadonnées, le lien de téléchargement et l'aperçu :
+    // PDF → iframe inline ; Word/Excel → message + téléchargement.
+    function openDocConsulter(btn) {
+        const d = btn.dataset;
+        document.getElementById('doc-voir-titre').textContent = 'Consulter — ' + d.titre;
+
+        const metaEl = document.getElementById('doc-voir-meta');
+        metaEl.innerHTML = '';
+        const lignes = [
+            ['Titre', d.titre],
+            ['Type', d.type],
+            ['Rattachement', d.rattachement],
+            ['Fichier', d.fichier],
+            ['Taille', d.taille],
+        ];
+        if (d.description) lignes.push(['Description', d.description]);
+
+        lignes.forEach(function([lib, val]) {
+            const bloc = document.createElement('div');
+            bloc.innerHTML = `<div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">${escHtml(lib)}</div>` +
+                `<div style="font-size:13px; color:var(--text); font-weight:500; margin-top:2px;">${escHtml(String(val)).replace(/\n/g, '<br>')}</div>`;
+            metaEl.appendChild(bloc);
+        });
+
+        document.getElementById('doc-voir-download').href = d.telecharger;
+        const frame = document.getElementById('doc-preview-frame');
+        const fallback = document.getElementById('doc-preview-fallback');
+        const format = document.getElementById('doc-voir-format');
+
+        const ext = (d.extension || '').toLowerCase();
+        if (ext === 'pdf') {
+            frame.src = d.apercu;              // aperçu inline via la route documents.preview
+            frame.style.display = 'block';
+            fallback.style.display = 'none';
+            format.textContent = 'Aperçu intégré (PDF)';
+        } else {
+            frame.src = 'about:blank';
+            frame.style.display = 'none';
+            fallback.style.display = 'block';
+            format.textContent = 'Fichier ' + ext.toUpperCase() + ' — aperçu intégré non pris en charge par le navigateur.';
+        }
+        openFormModal('modal-doc-consulter');
+    }
+
+    // Délégation de clic : bouton œil (.btn-voir, .btn-doc-voir) -> modals
     document.addEventListener('click', function(e) {
+        const btnDoc = e.target.closest('.btn-doc-voir');
+        if (btnDoc) {
+            openDocConsulter(btnDoc);
+            return;
+        }
+
         const btn = e.target.closest('.btn-voir');
         if (!btn) return;
 
@@ -1960,6 +2491,10 @@
         // Formulaire localité : liste des communes au premier rendu
         if (document.getElementById('loc-commune')) {
             majCommunesLoc();
+        }
+        // Formulaire document : liste des départements au premier rendu
+        if (document.getElementById('doc-departement')) {
+            majDepartementsDoc();
         }
     });
 

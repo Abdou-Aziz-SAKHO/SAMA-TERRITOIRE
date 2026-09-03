@@ -62,10 +62,9 @@ class AuthController extends Controller
 
         $user->save();
 
-        // Authentification
         $request->session()->regenerate();
 
-        return redirect('Dashboard');
+        return redirect('/UtilisateursAdmi')->with('success', 'Compte créé avec succès.');
     }
 
     public function auth(Request $request)

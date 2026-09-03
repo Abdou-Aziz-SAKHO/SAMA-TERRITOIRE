@@ -91,9 +91,13 @@ class Infrastructure extends Model
         return $this->morphMany(Document::class, 'documentable');
     }
 
+    /**
+     * Photos de l'infrastructure. La table `photos` référence directement
+     * l'infrastructure via `infrastructure_id` (pas de morph).
+     */
     public function photos()
     {
-        return $this->morphMany(Photo::class, 'photoable');
+        return $this->hasMany(Photo::class);
     }
 
     /**

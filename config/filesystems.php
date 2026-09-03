@@ -60,6 +60,60 @@ return [
             'report' => false,
         ],
 
+        /*
+        |--------------------------------------------------------------------------
+        | Disque "documents" — fichiers importés (Excel, Word, PDF)
+        |--------------------------------------------------------------------------
+        |
+        | Disque dédié aux documents : en local le contenu vit dans
+        | storage/app/private/documents ; en production on bascule vers un
+        | stockage objet (S3, MinIO, R2, Backblaze…) en ne modifiant QUE la
+        | variable DOCUMENT_DISK dans l'environnement (ex. DOCUMENT_DISK=s3).
+        | Le contrôleur DocumentController utilise ce disque (driver-agnostique),
+        | les routes de prévisualisation/téléchargement restent inchangées.
+        |
+        */
+        'documents' => [
+            'driver' => env('DOCUMENT_DISK', 'local'), // bascule : local → s3
+            // Local (ignoré par les autres drivers)
+            'root' => storage_path('app/private/documents'),
+            // Paramètres S3-compatible (S3, MinIO, R2…) — ignorés en local
+            'key' => env('DOCUMENT_AWS_ACCESS_KEY_ID'),
+            'secret' => env('DOCUMENT_AWS_SECRET_ACCESS_KEY'),
+            'region' => env('DOCUMENT_AWS_DEFAULT_REGION'),
+            'bucket' => env('DOCUMENT_AWS_BUCKET'),
+            'url' => env('DOCUMENT_AWS_URL'),
+            'endpoint' => env('DOCUMENT_AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('DOCUMENT_AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
+            'report' => false,
+        ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Disque "photos" — photos des infrastructures
+        |--------------------------------------------------------------------------
+        |
+        | Même principe que le disque documents : contenu privé en local
+        | (storage/app/private/photos), bascule vers un stockage objet
+        | (S3, MinIO, R2…) via la seule variable PHOTO_DISK. Les images ne
+        | sont servies que par la route /Photos/{photo} (aucun accès direct).
+        |
+        */
+        'photos' => [
+            'driver' => env('PHOTO_DISK', 'local'), // bascule : local → s3
+            'root' => storage_path('app/private/photos'),
+            'key' => env('PHOTO_AWS_ACCESS_KEY_ID'),
+            'secret' => env('PHOTO_AWS_SECRET_ACCESS_KEY'),
+            'region' => env('PHOTO_AWS_DEFAULT_REGION'),
+            'bucket' => env('PHOTO_AWS_BUCKET'),
+            'url' => env('PHOTO_AWS_URL'),
+            'endpoint' => env('PHOTO_AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('PHOTO_AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*

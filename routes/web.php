@@ -5,6 +5,9 @@ use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CartographieController;
 use App\Http\Controllers\DonneesController;
+use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\ActualiteController;
+use App\Http\Controllers\UtilisateurController;
 use App\Http\Controllers\Controller;
 
 Route::get('/', function () {
@@ -45,6 +48,25 @@ Route::delete('/Donnees/Localite/{localite}', [DonneesController::class, 'destro
 Route::delete('/Donnees/Secteur/{secteur}', [DonneesController::class, 'destroySecteur'])->name('donnees.destroySecteur');
 Route::delete('/Donnees/Infrastructure/{infrastructure}', [DonneesController::class, 'destroyInfrastructure'])->name('donnees.destroyInfrastructure');
 
+
+// ── Documents (fichiers Excel / Word / PDF) ──
+Route::post('/Donnees/Document', [DocumentController::class, 'store'])->name('donnees.storeDocument');
+Route::get('/Documents/{document}/apercu', [DocumentController::class, 'preview'])->name('documents.preview');
+Route::get('/Documents/{document}/telecharger', [DocumentController::class, 'download'])->name('documents.download');
+Route::delete('/Documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
+
+// ── Photos des infrastructures (affichage dans la consultation) ──
+Route::get('/Photos/{photo}', [DonneesController::class, 'apercuPhoto'])->name('photos.apercu');
+
+// ── Actualités (Admin) ──
+Route::get('/ActualitesAdmi', [ActualiteController::class, 'index'])->name('ActualitesAdmi');
+Route::post('/Actualites/Actualite', [ActualiteController::class, 'store'])->name('actualites.store');
+Route::put('/Actualites/Actualite/{actualite}', [ActualiteController::class, 'update'])->name('actualites.update');
+Route::delete('/Actualites/Actualite/{actualite}', [ActualiteController::class, 'destroy'])->name('actualites.destroy');
+Route::get('/Actualites/Impact/{actualite}', [ActualiteController::class, 'impact'])->name('actualites.impact');
+Route::put('/Actualites/Commentaire/{commentaire}/lue', [ActualiteController::class, 'marquerLue'])->name('actualites.marquerLue');
+Route::delete('/Actualites/Commentaire/{commentaire}', [ActualiteController::class, 'supprimerCommentaire'])->name('actualites.supprimerCommentaire');
+
 // Route d'analyse d'impact AVANT suppression : renvoie en JSON la liste
 // de ce qui sera détruit (affiché dans l'écran de confirmation)
 Route::get('/Donnees/Impact/{type}/{id}', [DonneesController::class, 'impact'])->name('donnees.impact');
@@ -52,6 +74,11 @@ Route::get('/Donnees/Impact/{type}/{id}', [DonneesController::class, 'impact'])-
 // route pour creer une utlisateurs
 Route::get('/Register', [AuthController::class, 'register'])->name('Register');
 Route::post('/Register', [AuthController::class, 'registerAdmi'])->name('Register.post');
+
+// ── Gestion des utilisateurs (page Admin) ──
+Route::get('/UtilisateursAdmi', [UtilisateurController::class, 'index'])->name('UtilisateursAdmi');
+Route::put('/Utilisateurs/{user}', [UtilisateurController::class, 'update'])->name('utilisateurs.update');
+Route::put('/Utilisateurs/{user}/statut', [UtilisateurController::class, 'toggleStatut'])->name('utilisateurs.statut');
 
 
 // Route pour se connecter et se deconnecter

@@ -16,11 +16,6 @@ class Commentaire extends Model
         'actualite_id',
     ];
 
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
     public function actualite()
     {
         return $this->belongsTo(Actualite::class);

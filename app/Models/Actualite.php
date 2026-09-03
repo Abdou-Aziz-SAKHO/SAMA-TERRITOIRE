@@ -14,14 +14,47 @@ class Actualite extends Model
         'date_publication',
         'region_id',
         'departement_id',
-        'localite_id',
         'commune_id',
+        'localite_id',
         'infrastructure_id',
-
     ];
 
-    public function photo()
+    protected $casts = [
+        'date_publication' => 'datetime',
+    ];
+
+    public function photos()
     {
-        return $this->belongsTo(Photo::class);
+        return $this->hasMany(Photo::class);
+    }
+
+    public function commentaires()
+    {
+        return $this->hasMany(Commentaire::class);
+    }
+
+    public function region()
+    {
+        return $this->belongsTo(Region::class);
+    }
+
+    public function departement()
+    {
+        return $this->belongsTo(Departement::class);
+    }
+
+    public function commune()
+    {
+        return $this->belongsTo(Commune::class);
+    }
+
+    public function localite()
+    {
+        return $this->belongsTo(Localite::class);
+    }
+
+    public function infrastructure()
+    {
+        return $this->belongsTo(Infrastructure::class);
     }
 }

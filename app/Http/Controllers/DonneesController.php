@@ -13,7 +13,9 @@ use App\Models\Photo;
 use App\Models\Actualite;
 use App\Models\Document;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\QueryException;
 use Illuminate\Validation\Rule;
 
@@ -40,13 +42,18 @@ class DonneesController extends Controller
         $communeId = $request->get('commune_id');
         $secteurId = $request->get('secteur_id');
         $localiteId = $request->get('localite_id');
+        // Recherche libre sur le tableau de l'onglet actif
+        $q = $request->get('q');
 
         // ── Régions : pas de filtre parent ──
-        $regions = Region::orderBy('nom')->paginate(10, ['*'], 'regions_page');
+        $regions = Region::orderBy('nom')
+            ->when($q, fn($query) => $query->where('nom', 'like', "%{$q}%"))
+            ->paginate(10, ['*'], 'regions_page');
 
         // ── Départements : filtrés par région si sélectionnée ──
         $departements = Departement::with('region')
-            ->when($regionId, fn($q) => $q->where('region_id', $regionId))
+            ->when($regionId, fn($query) => $query->where('region_id', $regionId))
+            ->when($q, fn($query) => $query->where('nom', 'like', "%{$q}%"))
             ->orderBy('nom')
             ->paginate(10, ['*'], 'departements_page');
 
@@ -54,8 +61,9 @@ class DonneesController extends Controller
         //    (une commune est visible si le département auquel elle appartient
         //    se situe dans la région sélectionnée).
         $communes = Commune::with('departement')
-            ->when($departementId, fn($q) => $q->where('departement_id', $departementId))
-            ->when(!$departementId && $regionId, fn($q) => $q->whereHas('departement', fn($d) => $d->where('region_id', $regionId)))
+            ->when($departementId, fn($query) => $query->where('departement_id', $departementId))
+            ->when(!$departementId && $regionId, fn($query) => $query->whereHas('departement', fn($d) => $d->where('region_id', $regionId)))
+            ->when($q, fn($query) => $query->where('nom', 'like', "%{$q}%"))
             ->orderBy('nom')
             ->paginate(10, ['*'], 'communes_page');
 
@@ -65,19 +73,22 @@ class DonneesController extends Controller
         //    - Sinon un département affiche les localités de ses communes.
         //    - Sinon une région affiche les localités des communes de ses départements.
         $localites = Localite::with('commune')
-            ->when($communeId, fn($q) => $q->where('commune_id', $communeId))
-            ->when(!$communeId && $departementId, fn($q) => $q->whereHas('commune', fn($c) => $c->where('departement_id', $departementId)))
-            ->when(!$communeId && !$departementId && $regionId, fn($q) => $q->whereHas('commune.departement', fn($d) => $d->where('region_id', $regionId)))
+            ->when($communeId, fn($query) => $query->where('commune_id', $communeId))
+            ->when(!$communeId && $departementId, fn($query) => $query->whereHas('commune', fn($c) => $c->where('departement_id', $departementId)))
+            ->when(!$communeId && !$departementId && $regionId, fn($query) => $query->whereHas('commune.departement', fn($d) => $d->where('region_id', $regionId)))
+            ->when($q, fn($query) => $query->where('nom', 'like', "%{$q}%"))
             ->orderBy('nom')
             ->paginate(10, ['*'], 'localites_page');
 
         // ── Secteurs : pas de filtre parent ──
-        $secteurs = Secteur::orderBy('nom')->paginate(10, ['*'], 'secteurs_page');
+        $secteurs = Secteur::orderBy('nom')
+            ->when($q, fn($query) => $query->where('nom', 'like', "%{$q}%"))
+            ->paginate(10, ['*'], 'secteurs_page');
 
         // ── Infrastructures : rattachées à 1 département OU 1 commune OU 1..n localités ──
         // Les filtres région/département "traversent" la commune quand l'infrastructure
         // n'est pas rattachée directement à un département.
-        $infrastructures = Infrastructure::with(['departement', 'commune.departement', 'secteur', 'localitesCouvertes', 'indicateurs'])
+        $infrastructures = Infrastructure::with(['departement', 'commune.departement', 'secteur', 'localitesCouvertes', 'indicateurs', 'photos'])
             ->when($regionId, fn($q) => $q->where(function ($q) use ($regionId) {
                 // Via le département direct OU via le département de la commune
                 $q->whereHas('departement', fn($d) => $d->where('region_id', $regionId))
@@ -92,6 +103,7 @@ class DonneesController extends Controller
             ->when($secteurId, fn($q) => $q->where('secteur_id', $secteurId))
             // Filtre par localité : passe désormais par la table des localités COUVERTES
             ->when($localiteId, fn($q) => $q->whereHas('localitesCouvertes', fn($l) => $l->where('localites.id', $localiteId)))
+            ->when($q, fn($query) => $query->where('nom', 'like', "%{$q}%"))
             ->orderBy('nom')
             ->paginate(10, ['*'], 'infrastructures_page');
 
@@ -103,13 +115,218 @@ class DonneesController extends Controller
         $allLocalites = Localite::orderBy('nom')->get();
         // Tous les indicateurs (pour alimenter les listes de valeurs par secteur côté client)
         $allIndicateurs = Indicateur::orderBy('nom_indicateur')->get();
+        // Toutes les infrastructures (rattachement optionnel d'un document)
+        $allInfrastructures = Infrastructure::orderBy('nom')->get(['id', 'nom']);
+
+        // Filtre propre aux documents : le type (rapport, fiche, document, PDC)
+        $docType = $request->get('type_document');
+
+        // Filtre infrastructure pour les documents (cascade territoriale)
+        $infrastructureId = $request->get('infrastructure_id');
+        if ($communeId) {
+            $filteredInfrastructures = $allInfrastructures->where('commune_id', $communeId);
+        } elseif ($departementId) {
+            $communesDept = $allCommunes->where('departement_id', $departementId)->pluck('id')->all();
+            $filteredInfrastructures = $allInfrastructures->filter(fn ($i) =>
+                $i->departement_id == $departementId
+                || in_array($i->commune_id, $communesDept)
+            )->values();
+        } elseif ($regionId) {
+            $deptIds    = $allDepartements->where('region_id', $regionId)->pluck('id')->all();
+            $communeIds = $allCommunes->whereIn('departement_id', $deptIds)->pluck('id')->all();
+            $filteredInfrastructures = $allInfrastructures->filter(fn ($i) =>
+                in_array($i->departement_id, $deptIds)
+                || in_array($i->commune_id, $communeIds)
+            )->values();
+        } else {
+            $filteredInfrastructures = $allInfrastructures;
+        }
+
+        // ── Documents : le plus récent d'abord, avec leurs relations pour l'affichage.
+        //    Un document n'est rattaché qu'à UN niveau (arrêt au niveau) : un filtre
+        //    région/département/commune "traverse" donc toute la hiérarchie pour
+        //    retrouver les documents du territoire choisi (directement ou via un
+        //    niveau inférieur / une infrastructure).
+        $documents = Document::with(['region', 'departement', 'commune', 'localite', 'infrastructure'])
+            ->when($regionId, fn($q) => $q->where(function ($q) use ($regionId) {
+                $q->where('region_id', $regionId)
+                  ->orWhereHas('departement', fn($d) => $d->where('region_id', $regionId))
+                  ->orWhereHas('commune.departement', fn($d) => $d->where('region_id', $regionId))
+                  ->orWhereHas('localite.commune.departement', fn($d) => $d->where('region_id', $regionId))
+                  ->orWhereHas('infrastructure', fn($i) => $i
+                      ->whereHas('departement', fn($d) => $d->where('region_id', $regionId))
+                      ->orWhereHas('commune.departement', fn($d) => $d->where('region_id', $regionId)));
+            }))
+            ->when($departementId, fn($q) => $q->where(function ($q) use ($departementId) {
+                $q->where('departement_id', $departementId)
+                  ->orWhereHas('commune', fn($c) => $c->where('departement_id', $departementId))
+                  ->orWhereHas('localite.commune', fn($c) => $c->where('departement_id', $departementId))
+                  ->orWhereHas('infrastructure', fn($i) => $i
+                      ->where('departement_id', $departementId)
+                      ->orWhereHas('commune', fn($c) => $c->where('departement_id', $departementId)));
+            }))
+            ->when($communeId, fn($q) => $q->where(function ($q) use ($communeId) {
+                $q->where('commune_id', $communeId)
+                  ->orWhereHas('localite', fn($l) => $l->where('commune_id', $communeId))
+                  ->orWhereHas('infrastructure', fn($i) => $i->where('commune_id', $communeId));
+            }))
+            ->when($localiteId, fn($query) => $query->where('localite_id', $localiteId))
+            ->when($infrastructureId, fn($query) => $query->where('infrastructure_id', $infrastructureId))
+            ->when($docType, fn($query) => $query->where('type_document', $docType))
+            ->when($q, fn($query) => $query->where('titre', 'like', "%{$q}%"))
+            ->orderByDesc('created_at')
+            ->paginate(10, ['*'], 'documents_page');
+
+        // ── Documents liés à chaque entité affichée (bouton 👁 "Consulter") : on
+        //    prépare une carte id → liste de documents par type d'entité, afin que
+        //    la vue n'exécute pas de requêtes. La découverte est "du bas vers le haut"
+        //    hiérarchique : une région voit aussi les docs de ses départements, etc.
+        $constrDocs = fn($lignes, string $type) => $lignes->mapWithKeys(
+            fn($el) => [$el->id => $this->documentsTerritoire($type, $el->id)
+                ->map(fn($d) => ['titre' => $d->titre, 'type' => $d->type_document, 'lien' => $this->lienDocumentConsultation($d)])
+                ->values()->all()]
+        );
+        $docsParRegion         = $constrDocs($regions, 'region');
+        $docsParDepartement    = $constrDocs($departements, 'departement');
+        $docsParCommune        = $constrDocs($communes, 'commune');
+        $docsParLocalite       = $constrDocs($localites, 'localite');
+        $docsParInfrastructure = $constrDocs($infrastructures, 'infrastructure');
+
+        $connecte = Auth::user();
 
         return view('PageAdmi.DonneesAdmi', compact(
             'tab',
             'regions', 'departements', 'communes', 'localites', 'secteurs', 'infrastructures',
+            'documents',
             'allRegions', 'allDepartements', 'allCommunes', 'allSecteurs', 'allLocalites', 'allIndicateurs',
-            'regionId', 'departementId', 'communeId', 'secteurId', 'localiteId'
+            'allInfrastructures',
+            'regionId', 'departementId', 'communeId', 'secteurId', 'localiteId',
+            'docType', 'infrastructureId', 'filteredInfrastructures', 'docsParRegion', 'docsParDepartement', 'docsParCommune', 'docsParLocalite', 'docsParInfrastructure',
+            'q',
+            'connecte',
         ));
+    }
+
+    /**
+     * Retrouve tous les documents rattachés à une entité territoriale
+     * (pour le bouton 👁 "Consulter"), en incluant ceux des niveaux
+     * INFÉRIEURS de la hiérarchie :
+     *   - une région voit les docs de ses départements, communes, localités,
+     *     et des infrastructures implantées dans son arbre ;
+     *   - un département voit ceux de ses communes, localités et infrastructures ;
+     *   - une commune voit ceux de ses localités et de ses infrastructures ;
+     *   - une localité voit les siens et ceux des infrastructures qui la couvrent ;
+     *   - une infrastructure voit uniquement les docs qui lui sont liés.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\Document>
+     */
+    private function documentsTerritoire(string $type, int $id)
+    {
+        return match ($type) {
+            'region' => Document::where(fn ($q) => $q
+                ->where('region_id', $id)
+                ->orWhereHas('departement', fn ($d) => $d->where('region_id', $id))
+                ->orWhereHas('commune.departement', fn ($d) => $d->where('region_id', $id))
+                ->orWhereHas('localite.commune.departement', fn ($d) => $d->where('region_id', $id))
+                ->orWhereHas('infrastructure', fn ($i) => $i
+                    ->whereHas('departement', fn ($d) => $d->where('region_id', $id))
+                    ->orWhereHas('commune.departement', fn ($d) => $d->where('region_id', $id))))
+                ->orderByDesc('created_at')->get(),
+            'departement' => Document::where(fn ($q) => $q
+                ->where('departement_id', $id)
+                ->orWhereHas('commune', fn ($c) => $c->where('departement_id', $id))
+                ->orWhereHas('localite.commune', fn ($c) => $c->where('departement_id', $id))
+                ->orWhereHas('infrastructure', fn ($i) => $i
+                    ->where('departement_id', $id)
+                    ->orWhereHas('commune', fn ($c) => $c->where('departement_id', $id))))
+                ->orderByDesc('created_at')->get(),
+            'commune' => Document::where(fn ($q) => $q
+                ->where('commune_id', $id)
+                ->orWhereHas('localite', fn ($l) => $l->where('commune_id', $id))
+                ->orWhereHas('infrastructure', fn ($i) => $i->where('commune_id', $id)))
+                ->orderByDesc('created_at')->get(),
+            'localite' => Document::where(fn ($q) => $q
+                ->where('localite_id', $id)
+                ->orWhereHas('infrastructure.localitesCouvertes', fn ($l) => $l->where('localites.id', $id)))
+                ->orderByDesc('created_at')->get(),
+            default => Document::where('infrastructure_id', $id)->orderByDesc('created_at')->get(),
+        };
+    }
+
+    /**
+     * Choisit le bon lien pour un document dans les consultations 👁 :
+     *   - affichable dans le navigateur (PDF, images) → aperçu intégré ;
+     *   - sinon (Word, Excel, CSV…) → téléchargement direct, pour éviter
+     *     la page blanche du navigateur qui ne sait pas rendre le fichier en ligne.
+     */
+    private function lienDocumentConsultation(Document $document): string
+    {
+        $affichable = in_array(strtolower($document->extension ?? ''), ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp']);
+
+        return $affichable
+            ? route('documents.preview', $document)
+            : route('documents.download', $document);
+    }
+
+    /**
+     * Enregistre les photos d'une infrastructure sur le disque dédié "photos"
+     * (chemin relatif "année/fichier_hash.ext", ex. "2026/abcd1234.jpg") puis
+     * crée les enregistrements. Les erreurs de stockage annulent la transaction.
+     */
+    private function enregistrerPhotos(Infrastructure $infrastructure, array $fichiers): void
+    {
+        foreach ($fichiers as $fichier) {
+            if (! $fichier instanceof \Illuminate\Http\UploadedFile) {
+                continue;
+            }
+            $chemin = $fichier->store(date('Y'), 'photos');
+
+            Photo::create([
+                'infrastructure_id' => $infrastructure->id,
+                'nom'               => $fichier->getClientOriginalName(),
+                'chemin_photo'      => $chemin,
+                'description'       => null,
+            ]);
+        }
+    }
+
+    /**
+     * Affiche une photo en ligne (navigation directe dans la consultation).
+     * Driver-agnostique : fonctionne en local comme sur S3/MinIO/R2.
+     */
+    public function apercuPhoto(Photo $photo)
+    {
+        $disque  = Storage::disk('photos');
+        $chemin  = $this->resoudreCheminPhoto($photo->chemin_photo);
+        abort_unless($disque->exists($chemin), 404, 'Photo introuvable.');
+
+        return $disque->response($chemin, $photo->nom, [
+            'Content-Type' => $this->mimeParExtension($chemin),
+        ]);
+    }
+
+    /**
+     * MIME selon l'extension réelle du fichier (indépendant du champ envoyé
+     * par le client, donc fiable).
+     */
+    private function mimeParExtension(string $chemin): string
+    {
+        return match (strtolower(pathinfo($chemin, PATHINFO_EXTENSION))) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png'         => 'image/png',
+            'gif'         => 'image/gif',
+            'webp'        => 'image/webp',
+            default       => 'application/octet-stream',
+        };
+    }
+
+    /**
+     * Normalise un chemin stocké pour le disque "photos" (tolère l'ancien
+     * préfixe "photos/" comme le font les documents).
+     */
+    private function resoudreCheminPhoto(string $chemin): string
+    {
+        return preg_replace('#^photos/#', '', $chemin);
     }
 
     // ══════════════════════════════════════════════════════════
@@ -497,12 +714,13 @@ class DonneesController extends Controller
             }
         }
 
-        // ── Création en transaction : infrastructure + pivots en un seul bloc atomique ──
-        DB::transaction(function () use ($validated) {
-            // On retire "localites", "population_couverte" et "indicateurs_valeurs"
-            // avant la création (ce ne sont pas des colonnes de la table infrastructures)
+        // ── Création en transaction : infrastructure + pivots + photos ──
+        DB::transaction(function () use ($validated, $request) {
+            // On retire "localites", "population_couverte", "indicateurs_valeurs"
+            // et "photos" avant la création (ce ne sont pas des colonnes de la
+            // table infrastructures)
             $infrastructure = Infrastructure::create(
-                collect($validated)->except(['localites', 'population_couverte', 'indicateurs_valeurs'])->all()
+                collect($validated)->except(['localites', 'population_couverte', 'indicateurs_valeurs', 'photos'])->all()
             );
 
             // Enregistrement des localités couvertes dans la pivot
@@ -517,6 +735,9 @@ class DonneesController extends Controller
                 $infrastructure,
                 $validated['indicateurs_valeurs'] ?? []
             );
+
+            // Enregistrement des photos sur le disque dédié ("photos")
+            $this->enregistrerPhotos($infrastructure, $request->file('photos', []));
         });
 
         return redirect()->route('DonneesAdmi', ['tab' => 'infrastructures'])
@@ -552,9 +773,19 @@ class DonneesController extends Controller
             }
         }
 
-        DB::transaction(function () use ($infrastructure, $validated) {
+        // Budget photos : total = photos conservées + nouvelles, plafonné à 10.
+        $photosASupprimer = $request->input('photos_supprimer', []);
+        $photosConservees = $infrastructure->photos->count() - count($photosASupprimer);
+        $photosAjoutees   = count(array_filter($request->file('photos', []), fn ($f) => $f instanceof \Illuminate\Http\UploadedFile));
+        if ($photosConservees + $photosAjoutees > 10) {
+            return back()
+                ->withErrors(['photos' => 'Le total de photos ne peut pas dépasser 10 par infrastructure.'])
+                ->withInput();
+        }
+
+        DB::transaction(function () use ($infrastructure, $validated, $request) {
             $infrastructure->update(
-                collect($validated)->except(['localites', 'population_couverte', 'indicateurs_valeurs'])->all()
+                collect($validated)->except(['localites', 'population_couverte', 'indicateurs_valeurs', 'photos', 'photos_supprimer'])->all()
             );
 
             // sync() remplace l'ancienne couverture par la nouvelle :
@@ -571,6 +802,23 @@ class DonneesController extends Controller
                 $infrastructure,
                 $validated['indicateurs_valeurs'] ?? []
             );
+
+            // ── Photos : retrait des cases cochées (ligne + fichier sur disque)
+            // puis enregistrement des nouvelles images. On ne supprime que les
+            // photos appartenant réellement à cette infrastructure (id + filtre).
+            $idsASupprimer = array_filter(
+                array_map('intval', $request->input('photos_supprimer', []))
+            );
+            if (! empty($idsASupprimer)) {
+                Photo::where('infrastructure_id', $infrastructure->id)
+                    ->whereIn('id', $idsASupprimer)
+                    ->get()
+                    ->each(function (Photo $photo) {
+                        Storage::disk('photos')->delete($this->resoudreCheminPhoto($photo->chemin_photo));
+                        $photo->delete();
+                    });
+            }
+            $this->enregistrerPhotos($infrastructure, $request->file('photos', []));
         });
 
         return redirect()->route('DonneesAdmi', ['tab' => 'infrastructures'])
@@ -585,6 +833,12 @@ class DonneesController extends Controller
     public function destroyInfrastructure(Infrastructure $infrastructure)
     {
         try {
+            // On efface d'abord les fichiers photos sur le disque (la suppression
+            // de l'enregistrement cascaderait sur les lignes, mais pas sur les fichiers)
+            foreach ($infrastructure->photos as $photo) {
+                Storage::disk('photos')->delete($this->resoudreCheminPhoto($photo->chemin_photo));
+            }
+
             $infrastructure->delete();
             return redirect()->route('DonneesAdmi', ['tab' => 'infrastructures'])
                 ->with('success', 'Infrastructure supprimée avec succès !');
@@ -615,6 +869,7 @@ class DonneesController extends Controller
             'localite'       => Localite::class,
             'secteur'        => Secteur::class,
             'infrastructure' => Infrastructure::class,
+            'document'       => Document::class,
         ];
 
         // Type inconnu ou élément introuvable : réponse 404 JSON
@@ -634,6 +889,7 @@ class DonneesController extends Controller
             'localite'       => $this->impactLocalite($modele),
             'secteur'        => $this->impactSecteur($modele),
             'infrastructure' => $this->impactInfrastructure($modele),
+            'document'       => $this->impactDocument($modele),
         };
 
         return response()->json([
@@ -819,6 +1075,22 @@ class DonneesController extends Controller
     }
 
     /**
+     * Document : aucun descendant en cascade, mais on avertit explicitement
+     * que le fichier physique sera définitivement effacé du stockage.
+     */
+    private function impactDocument(Document $document): array
+    {
+        return [
+            "Supprimer définitivement le document « {$document->titre} » ?",
+            $this->filtreImpact([
+                ['label' => 'fichier(s) effacé(s) du stockage', 'nombre' => 1, 'exemples' => $document->nom_fichier ?? ''],
+            ]),
+            false,
+            'Le fichier physique sera définitivement effacé du disque.',
+        ];
+    }
+
+    /**
      * Construit une ligne d'impact standard : libellé, nombre d'éléments
      * et quelques noms d'exemple pour rendre l'écran concret.
      */
@@ -942,6 +1214,17 @@ class DonneesController extends Controller
             // Les valeurs manquantes restent null dans la pivot.
             'indicateurs_valeurs'      => 'nullable|array',
             'indicateurs_valeurs.*'    => 'nullable|numeric|min:0',
+
+            // Photos de l'infrastructure : images JPG/PNG/GIF/WebP,
+            // 5 Mo max chacune, 10 maximum par infrastructure.
+            'photos'   => 'nullable|array|max:10',
+            'photos.*' => ['image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
+
+            // Photos à retirer lors de la modification (cases cochées sur les
+            // vignettes existantes). L'appartenance à l'infrastructure est
+            // re-vérifiée dans updateInfrastructure.
+            'photos_supprimer'   => 'nullable|array',
+            'photos_supprimer.*' => 'integer',
         ];
     }
 
