@@ -8,6 +8,6 @@ class AdmiController extends Controller
 {
     public function index()
     {
-        return view('PageAdmi.Dashboard');
+        return app(StatsAdmiController::class)->dashboard();
     }
 }

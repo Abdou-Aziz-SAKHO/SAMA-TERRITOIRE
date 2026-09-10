@@ -6,6 +6,11 @@
     </a>
 
 
+    {{-- Hamburger (affiché sur petit écran) --}}
+    <button type="button" class="nav-hamburger" aria-label="Ouvrir le menu">
+        <i class="fa-solid fa-bars"></i>
+    </button>
+
     {{-- Navigation Admin --}}
     <nav style="flex:1;display:flex;justify-content:center;gap:2px;">
 
@@ -17,10 +22,10 @@
 
 
         {{-- Cartographie --}}
-        <button class="nav-btn" data-href="{{ url('/CartographieAdmi') }}">
+        {{-- <button class="nav-btn" data-href="{{ url('/CartographieAdmi') }}">
             <i class="fa-solid fa-location-dot"></i>
             Cartographie
-        </button>
+        </button> --}}
 
 
         {{-- Statistiques --}}
@@ -32,13 +37,17 @@
                 <i class="fa-solid fa-chevron-down dropdown-caret"></i>
             </button>
             <div class="nav-dropdown-menu">
-                <button class="nav-dropdown-item" data-href="{{ url('/StatistiquesAdmi/Indicateur') }}">
-                    <i class="fa-solid fa-gauge"></i>
-                    Indicateur
-                </button>
+                {{-- <button class="nav-dropdown-item" data-href="{{ url('/Dashboard') }}">
+                    <i class="fa-solid fa-gauge-high"></i>
+                    Dashboard
+                </button> --}}
                 <button class="nav-dropdown-item" data-href="{{ url('/StatistiquesAdmi/VueGenerale') }}">
                     <i class="fa-solid fa-chart-line"></i>
                     Vue Générale
+                </button>
+                <button class="nav-dropdown-item" data-href="{{ url('/StatistiquesAdmi/Indicateur') }}">
+                    <i class="fa-solid fa-bullseye"></i>
+                    Indicateurs
                 </button>
             </div>
         </div>
@@ -48,6 +57,15 @@
         <button class="nav-btn" data-href="{{ url('/ActualitesAdmi') }}">
             <i class="fa-solid fa-newspaper"></i>
             Actualités
+        </button>
+
+        {{-- Commentaires --}}
+        <button class="nav-btn" data-href="{{ url('/CommentairesAdmi') }}">
+            <i class="fa-solid fa-comments"></i>
+            Commentaires
+            @if(($commentairesEnAttente ?? 0) > 0)
+                <span style="background:var(--red,#c44030); color:#fff; font-size:9px; padding:1px 6px; border-radius:8px; font-weight:700; margin-left:3px;">{{ $commentairesEnAttente }}</span>
+            @endif
         </button>
 
 
@@ -72,12 +90,12 @@
         {{-- Notifications --}}
 
         {{-- Messages --}}
-        <button class="nav-icon-btn" title="Messages" data-href="{{ url('/MessagesAdmi') }}">
-            <i class="fa-solid fa-message"></i>
+        {{-- <button class="nav-icon-btn" title="Messages" data-href="{{ url('/MessagesAdmi') }}">
+            <i class="fa-solid fa-message"></i> --}}
 
             {{-- Nombre de messages non lus --}}
-            <span class="notification-badge">3</span>
-        </button>
+            {{-- <span class="notification-badge">3</span>
+        </button> --}}
 
 
         {{-- Compte --}}
@@ -229,6 +247,39 @@
                 menu.classList.remove('open');
             });
 
+        });
+    </script>
+
+    {{-- Toggle hamburger (petits écrans) : ouvre/ferme le panneau de navigation --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var hdr = document.getElementById('hdr');
+            var burger = hdr ? hdr.querySelector('.nav-hamburger') : null;
+            if (!hdr || !burger) return;
+
+            burger.addEventListener('click', function (e) {
+                e.stopPropagation();
+                hdr.classList.toggle('nav-open');
+                burger.innerHTML = hdr.classList.contains('nav-open')
+                    ? '<i class="fa-solid fa-xmark"></i>'
+                    : '<i class="fa-solid fa-bars"></i>';
+            });
+
+            // Ferme le panneau quand on choisit une destination
+            document.querySelectorAll('#hdr nav .nav-btn[data-href]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    hdr.classList.remove('nav-open');
+                    burger.innerHTML = '<i class="fa-solid fa-bars"></i>';
+                });
+            });
+
+            // Ferme le panneau en cliquant ailleurs
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('#hdr .nav-hamburger') && !e.target.closest('#hdr nav')) {
+                    hdr.classList.remove('nav-open');
+                    burger.innerHTML = '<i class="fa-solid fa-bars"></i>';
+                }
+            });
         });
     </script>
 

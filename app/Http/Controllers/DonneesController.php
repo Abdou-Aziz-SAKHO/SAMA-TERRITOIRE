@@ -300,8 +300,14 @@ class DonneesController extends Controller
         $chemin  = $this->resoudreCheminPhoto($photo->chemin_photo);
         abort_unless($disque->exists($chemin), 404, 'Photo introuvable.');
 
-        return $disque->response($chemin, $photo->nom, [
-            'Content-Type' => $this->mimeParExtension($chemin),
+        $flux = $disque->readStream($chemin);
+
+        return response()->stream(function () use ($flux): void {
+            fpassthru($flux);
+            fclose($flux);
+        }, 200, [
+            'Content-Type'        => $this->mimeParExtension($chemin),
+            'Content-Disposition' => 'inline; filename="' . addslashes($photo->nom) . '"',
         ]);
     }
 
@@ -653,6 +659,54 @@ class DonneesController extends Controller
             return redirect()->route('DonneesAdmi', ['tab' => 'localites'])
                 ->with('error', 'Suppression impossible : cette localité est couverte par des infrastructures.');
         }
+    }
+
+    /**
+     * Statistique de comparaison des indicateurs d'un secteur.
+     *
+     * Renvoie pour chaque indicateur du secteur la somme de ses valeurs mesurées
+     * sur les infrastructures du secteur, plus la répartition par infrastructure.
+     * Utilisé par le bloc « Comparer les indicateurs » de la consultation secteur.
+     */
+    public function statsSecteur(Secteur $secteur)
+    {
+        $indicIds = $secteur->indicateurs()->pluck('id');
+
+        $lignes = $secteur->indicateurs->map(function (Indicateur $ind) {
+            return [
+                'id'                => $ind->id,
+                'nom'               => $ind->nom_indicateur,
+                'unites'            => $ind->unites ?? '',
+                'somme'             => 0.0,
+                'nbMesures'         => 0,
+                'parInfrastructure' => [],
+            ];
+        })->keyBy('id')->all();
+
+        if ($indicIds->isNotEmpty()) {
+            $infras = $secteur->infrastructures()
+                ->with(['indicateurs' => fn ($q) => $q->whereIn('indicateur_infrastructure.indicateur_id', $indicIds)])
+                ->get();
+
+            foreach ($infras as $infra) {
+                foreach ($infra->indicateurs as $ind) {
+                    if ($ind->pivot->valeur === null) {
+                        continue;
+                    }
+                    $lignes[$ind->id]['somme']       += (float) $ind->pivot->valeur;
+                    $lignes[$ind->id]['nbMesures']++;
+                    $lignes[$ind->id]['parInfrastructure'][] = [
+                        'nom'    => $infra->nom,
+                        'valeur' => (float) $ind->pivot->valeur,
+                    ];
+                }
+            }
+        }
+
+        return response()->json([
+            'nom'         => $secteur->nom,
+            'indicateurs' => array_values($lignes),
+        ]);
     }
 
     /**

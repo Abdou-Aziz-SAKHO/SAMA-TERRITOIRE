@@ -9,7 +9,7 @@
   ══════════════════════════════════════════════════════════════
 --}}
 
-<div style="display:flex; height:calc(100vh - var(--hdr)); margin-top:var(--hdr);">
+<div class="admin-layout" style="display:flex; height:calc(100vh - var(--hdr)); margin-top:var(--hdr);">
 
     {{-- ═══ SIDEBAR GAUCHE ═══ --}}
     <aside class="app-sidebar" style="background:var(--white); border-right:1px solid var(--border); padding:20px 16px; display:flex; flex-direction:column; gap:6px; overflow-y:auto;">
@@ -287,7 +287,7 @@
     </aside>
 
     {{-- ═══ ZONE PRINCIPALE ═══ --}}
-    <main style="flex:1; overflow-y:auto; padding:28px 36px; background:var(--bg);">
+    <main style="flex:1; overflow-y:auto; padding:28px 36px; background:var(--bg);" class="admin-main">
 
         {{-- Bandeau d'erreurs : validation des formulaires OU erreurs métier (suppression bloquée...) --}}
         @if($errors->any() || session('error'))
@@ -317,7 +317,7 @@
                     </button>
                 </div>
             </div>
-            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
+            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow-x:auto;">
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
                         <tr style="background:var(--surface2); text-align:left;">
@@ -378,7 +378,7 @@
                     </button>
                 </div>
             </div>
-            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
+            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow-x:auto;">
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
                         <tr style="background:var(--surface2); text-align:left;">
@@ -434,7 +434,7 @@
                     </button>
                 </div>
             </div>
-            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
+            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow-x:auto;">
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
                         <tr style="background:var(--surface2); text-align:left;">
@@ -490,7 +490,7 @@
                     </button>
                 </div>
             </div>
-            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
+            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow-x:auto;">
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
                         <tr style="background:var(--surface2); text-align:left;">
@@ -546,7 +546,7 @@
                     </button>
                 </div>
             </div>
-            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
+            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow-x:auto;">
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
                         <tr style="background:var(--surface2); text-align:left;">
@@ -610,7 +610,7 @@
                     </button>
                 </div>
             </div>
-            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
+            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow-x:auto;">
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
                         <tr style="background:var(--surface2); text-align:left;">
@@ -696,7 +696,7 @@
                     </button>
                 </div>
             </div>
-            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
+            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow-x:auto;">
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
                         <tr style="background:var(--surface2); text-align:left;">
@@ -1028,13 +1028,13 @@
                      l'envoi. Chaque ligne = un indicateur (nom, unité, description)
                      créé en même temps que le secteur. --}}
                 <div style="margin-top:6px; padding-top:14px; border-top:1px solid var(--border);">
-                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
-                        <label style="font-size:12px; font-weight:700; color:var(--text);">Indicateurs du secteur <span style="font-weight:400; color:var(--text-muted);">(facultatif)</span></label>
+                    <label style="display:block; font-size:12px; font-weight:700; color:var(--text); margin-bottom:12px;">Indicateurs du secteur <span style="font-weight:400; color:var(--text-muted);">(facultatif)</span></label>
+                    <div id="indicateurs-liste"></div>
+                    <div style="display:flex; justify-content:flex-end; margin-top:10px;">
                         <button type="button" onclick="ajouterLigneIndicateur()" style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px; background:var(--primary); color:#fff; border:none; border-radius:7px; font-size:11px; font-weight:600; cursor:pointer;">
                             <i class="fa-solid fa-plus"></i> Ajouter un indicateur
                         </button>
                     </div>
-                    <div id="indicateurs-liste"></div>
                     <div style="font-size:11px; color:var(--text-muted); margin-top:8px;">
                         <i class="fa-solid fa-circle-info"></i> Les indicateurs définissent ce que chaque infrastructure de ce secteur devra mesurer.
                     </div>
@@ -1332,6 +1332,28 @@
         </div>
         <div class="modal-card-body">
             <div id="voir-corps" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:12px 20px;"></div>
+
+            {{-- Comparateur d'indicateurs (réservé à la consultation d'un secteur) --}}
+            <div id="voir-compare" style="display:none; margin-top:22px; padding-top:18px; border-top:1px solid var(--border);">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+                    <div>
+                        <div style="font-size:12px; font-weight:700; color:var(--text);">Comparer les indicateurs</div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Cochez 2 indicateurs au minimum (ex. garçons / filles).</div>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <button type="button" id="compare-mode-totaux" onclick="basculerModeCompare('totaux')" style="padding:5px 12px; border-radius:7px; border:1px solid var(--border); background:var(--primary); color:#fff; font-size:11px; font-weight:600; cursor:pointer;">Totaux du secteur</button>
+                        <button type="button" id="compare-mode-infra" onclick="basculerModeCompare('infra')" style="padding:5px 12px; border-radius:7px; border:1px solid var(--border); background:var(--surface2); color:var(--text); font-size:11px; font-weight:600; cursor:pointer;">Par infrastructure</button>
+                    </div>
+                </div>
+                <div id="compare-checkboxes" style="display:flex; flex-wrap:wrap; gap:8px 16px; margin-bottom:14px;"></div>
+                <div style="position:relative; height:280px;">
+                    <canvas id="ch-indicateurs-compare"></canvas>
+                </div>
+                <div id="compare-aucune" style="display:none; padding:24px; text-align:center; color:var(--text-muted); font-size:12px;">
+                    Sélectionnez au moins 2 indicateurs pour afficher la comparaison.
+                </div>
+            </div>
+
             <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:24px;">
                 <button type="button" class="btn-cancel" onclick="closeFormModal('modal-consulter')">Fermer</button>
             </div>
@@ -2480,6 +2502,143 @@
         try { valeurs = JSON.parse(btn.dataset.values || '{}'); } catch (err) { valeurs = {}; }
 
         openConsulterModal(btn.dataset.entity, valeurs);
+
+        // Secteur : active le comparateur d'indicateurs en bas de la fiche
+        if (btn.dataset.entity === 'secteur') {
+            chargerComparateurSecteur(btn.dataset.id);
+        }
+    });
+
+    // ═══ COMPARATEUR D'INDICATEURS D'UN SECTEUR (consultation œil) ═══
+    // Choisir 2+ indicateurs (ex. garçons / filles) → diagramme comparatif :
+    //  - mode « Totaux du secteur » : une barre par indicateur (somme des mesures)
+    //  - mode « Par infrastructure » : barres groupées, une série par indicateur
+    var indicateurData = [];
+    var compareMode   = 'totaux';
+    var indicateurChart = null;
+
+    function chargerComparateurSecteur(secteurId) {
+        var zone = document.getElementById('voir-compare');
+        if (!zone) return;
+        zone.style.display = 'none';
+
+        if (indicateurChart) { indicateurChart.destroy(); indicateurChart = null; }
+
+        fetch('/Donnees/Secteur/' + encodeURIComponent(secteurId) + '/IndicateursStats')
+            .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(function (d) {
+                indicateurData = d.indicateurs || [];
+                var boite = document.getElementById('compare-checkboxes');
+                boite.innerHTML = '';
+                indicateurData.forEach(function (ind) {
+                    var lab = document.createElement('label');
+                    lab.style.cssText = 'display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--text); cursor:pointer;';
+                    var cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.value = String(ind.id);
+                    cb.className = 'compare-chip';
+                    cb.checked = true;
+                    lab.appendChild(cb);
+                    lab.appendChild(document.createTextNode(ind.nom + (ind.unites ? ' (' + ind.unites + ')' : '')));
+                    boite.appendChild(lab);
+                });
+                zone.style.display = 'block';
+                renderComparateur();
+            })
+            .catch(function () {
+                document.getElementById('compare-checkboxes').innerHTML =
+                    '<div style="color:var(--red); font-size:12px;">Impossible de charger les statistiques des indicateurs.</div>';
+                zone.style.display = 'block';
+            });
+    }
+
+    function renderComparateur() {
+        var canevas  = document.getElementById('ch-indicateurs-compare');
+        var message  = document.getElementById('compare-aucune');
+        if (indicateurChart) { indicateurChart.destroy(); indicateurChart = null; }
+
+        var selection = [].slice.call(document.querySelectorAll('.compare-chip:checked'))
+            .map(function (cb) { return cb.value; });
+
+        var vides = indicateurData.length === 0;
+        if (vides || selection.length < 2) {
+            canevas.style.display = 'none';
+            message.style.display = 'block';
+            message.textContent = vides
+                ? 'Aucune valeur mesurée pour les indicateurs de ce secteur.'
+                : 'Sélectionnez au moins 2 indicateurs pour afficher la comparaison.';
+            return;
+        }
+
+        canevas.style.display = 'block';
+        message.style.display = 'none';
+
+        var datas = indicateurData.filter(function (ind) { return selection.indexOf(String(ind.id)) !== -1; });
+        var palette = ['#267a47', '#1a7abf', '#d26a8d', '#f0a500', '#8aaa95', '#7d5fd3', '#c0392b', '#2e7fbb'];
+
+        if (compareMode === 'totaux') {
+            indicateurChart = new Chart(canevas, {
+                type: 'bar',
+                data: {
+                    labels: datas.map(function (ind) { return ind.nom; }),
+                    datasets: [{
+                        label: 'Valeur totale',
+                        data: datas.map(function (ind) { return ind.somme; }),
+                        backgroundColor: datas.map(function (_, i) { return palette[i % palette.length]; }),
+                        borderRadius: 6,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (ctx) { var ind = datas[ctx.dataIndex]; return (ind.unites ? ind.unites + ' — ' : '') + ctx.parsed.y; } } } },
+                    scales: { y: { beginAtZero: true } },
+                },
+            });
+        } else {
+            var infras = [];
+            datas.forEach(function (ind) {
+                (ind.parInfrastructure || []).forEach(function (p) {
+                    if (infras.indexOf(p.nom) === -1) infras.push(p.nom);
+                });
+            });
+            var datasets = datas.map(function (ind, i) {
+                var valParInfra = {};
+                (ind.parInfrastructure || []).forEach(function (p) { valParInfra[p.nom] = p.valeur; });
+                return {
+                    label: ind.nom,
+                    data: infras.map(function (n) { return valParInfra[n] || 0; }),
+                    backgroundColor: palette[i % palette.length],
+                    borderRadius: 4,
+                };
+            });
+            indicateurChart = new Chart(canevas, {
+                type: 'bar',
+                data: { labels: infras, datasets: datasets },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } },
+            });
+        }
+    }
+
+    function basculerModeCompare(mode) {
+        compareMode = mode;
+        var bTot = document.getElementById('compare-mode-totaux');
+        var bInf = document.getElementById('compare-mode-infra');
+        var styleBase = 'padding:5px 12px; border-radius:7px; border:1px solid var(--border); font-size:11px; font-weight:600; cursor:pointer;';
+        bTot.setAttribute('style', styleBase + (mode === 'totaux'
+            ? 'background:var(--primary); color:#fff;'
+            : 'background:var(--surface2); color:var(--text);'));
+        bInf.setAttribute('style', styleBase + (mode === 'infra'
+            ? 'background:var(--primary); color:#fff;'
+            : 'background:var(--surface2); color:var(--text);'));
+        renderComparateur();
+    }
+
+    // Re-rend à chaque changement de sélection d'indicateur
+    document.addEventListener('change', function (e) {
+        if (e.target.classList && e.target.classList.contains('compare-chip')) {
+            renderComparateur();
+        }
     });
 
     // Initialisation au chargement : remplissage initial des listes de création

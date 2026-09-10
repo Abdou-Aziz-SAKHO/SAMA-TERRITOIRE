@@ -328,7 +328,7 @@ class ActualiteController extends Controller
 
     public function marquerLue(Commentaire $commentaire)
     {
-        $commentaire->update(['statut' => 'lue']);
+        $commentaire->update(['statut' => 'lu']);
 
         return back()->with('success', 'Commentaire marqué comme lu.');
     }

@@ -26,6 +26,7 @@
 <script src="{{ asset('assets/websig/js/data-infrastructures.js') }}"></script>
 <script src="{{ asset('assets/websig/js/data-climate.js') }}"></script>
 <script src="{{ asset('assets/websig/js/app.js') }}"></script>
+<script src="{{ asset('assets/websig/js/responsive-tables.js') }}"></script>
 
 
 </body>

@@ -1,6 +1,6 @@
 @extends('AppAdmi')
 @section('content')
-<div style="display:flex; height:calc(100vh - var(--hdr)); padding-top:var(--hdr);">
+<div class="admin-layout" style="display:flex; height:calc(100vh - var(--hdr)); padding-top:var(--hdr);">
 
     {{-- ═══ SIDEBAR GAUCHE ═══ --}}
     <aside class="app-sidebar" style="background:var(--white); border-right:1px solid var(--border); padding:20px 16px; display:flex; flex-direction:column; gap:6px; overflow-y:auto;">
@@ -33,8 +33,8 @@
     </aside>
 
     {{-- ═══ ZONE PRINCIPALE ═══ --}}
-    <main style="flex:1; overflow-y:auto; background:var(--bg);">
-        <div style="width:100%; max-width:1100px; margin:0 auto; padding:28px 36px;">
+    <main style="flex:1; overflow-y:auto; background:var(--bg);" class="admin-main">
+        <div class="admin-main-inner" style="width:100%; max-width:1100px; margin:0 auto; padding:28px 36px;">
 
         {{-- Bandeau d'erreurs --}}
         @if($errors->any() || session('error'))
@@ -87,7 +87,7 @@
             </form>
 
             {{-- Tableau comptes --}}
-            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
+            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow-x:auto;">
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
                         <tr style="background:var(--surface2); text-align:left;">
@@ -181,7 +181,7 @@
                 </div>
             </div>
 
-            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
+            <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow-x:auto;">
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
                         <tr style="background:var(--surface2); text-align:left;">
@@ -222,7 +222,7 @@
     <div class="modal-card" style="max-width:560px;">
         <div class="modal-card-header">
             <h3>Modifier l'utilisateur</h3>
-            <button type="button" class="modal-close" onclick="closeModal('modal-modifier')">&times;</button>
+            <button type="button" class="modal-close" onclick="closeModalUtil('modal-modifier')">&times;</button>
         </div>
         <div class="modal-card-body">
             <form id="edit-user-form" method="POST" action="">
@@ -257,7 +257,7 @@
                     <input type="password" id="ed-password" name="password" placeholder="••••••••">
                 </div>
                 <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:6px;">
-                    <button type="button" class="btn-cancel" onclick="closeModal('modal-modifier')">Annuler</button>
+                    <button type="button" class="btn-cancel" onclick="closeModalUtil('modal-modifier')">Annuler</button>
                     <button type="submit" class="btn-submit"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button>
                 </div>
             </form>
@@ -270,7 +270,7 @@
     <div class="modal-card" style="max-width:440px;">
         <div class="modal-card-header">
             <h3 id="statut-titre">Confirmation</h3>
-            <button type="button" class="modal-close" onclick="closeModal('modal-statut')">&times;</button>
+            <button type="button" class="modal-close" onclick="closeModalUtil('modal-statut')">&times;</button>
         </div>
         <div class="modal-card-body">
             <p id="statut-message" style="font-size:13px; color:var(--text); margin:0 0 20px;"></p>
@@ -278,7 +278,7 @@
                 @csrf
                 @method('PUT')
                 <div style="display:flex; justify-content:flex-end; gap:10px;">
-                    <button type="button" class="btn-cancel" onclick="closeModal('modal-statut')">Annuler</button>
+                    <button type="button" class="btn-cancel" onclick="closeModalUtil('modal-statut')">Annuler</button>
                     <button type="submit" id="statut-confirmer" class="btn-submit"><i class="fa-solid fa-ban"></i> Confirmer</button>
                 </div>
             </form>
@@ -319,7 +319,7 @@
         return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    function closeModalUtil(id) { document.getElementById(id).classList.remove('active'); }
     function openFormModal(id) { document.getElementById(id).classList.add('active'); }
 
     // ── Modifier (les données sont injectées dans des data-attributes) ──

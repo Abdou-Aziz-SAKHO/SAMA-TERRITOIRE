@@ -8,6 +8,8 @@ use App\Http\Controllers\DonneesController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ActualiteController;
 use App\Http\Controllers\UtilisateurController;
+use App\Http\Controllers\CommentaireController;
+use App\Http\Controllers\StatsAdmiController;
 use App\Http\Controllers\Controller;
 
 Route::get('/', function () {
@@ -22,6 +24,20 @@ Route::get('/statistique', [CartographieController::class, 'statistique'])->name
 // Route pour Les Administrateurs
 Route::get('/Dashboard', [AdmiController::class, 'Index'])->name('Dashboard');
 Route::get('/Donnees', [DonneesController::class, 'index'])->name('DonneesAdmi');
+
+// Statistiques (JSON) des indicateurs d'un secteur pour la comparaison en consultation
+Route::get('/Donnees/Secteur/{secteur}/IndicateursStats', [DonneesController::class, 'statsSecteur'])->name('donnees.statsSecteur');
+
+// ── Commentaires indépendants (feedbacks) — Admin ──
+Route::get('/CommentairesAdmi', [CommentaireController::class, 'index'])->name('CommentairesAdmi');
+Route::put('/Commentaires/{commentaire}/lu', [CommentaireController::class, 'marquerLu'])->name('commentaires.marquerLu');
+Route::put('/Commentaires/{commentaire}/traite', [CommentaireController::class, 'marquerTraite'])->name('commentaires.marquerTraite');
+Route::delete('/Commentaires/{commentaire}', [CommentaireController::class, 'destroy'])->name('commentaires.destroy');
+Route::post('/Commentaires/export-pdf', [CommentaireController::class, 'exportPdf'])->name('commentaires.exportPdf');
+
+// ── Statistiques (Admin) ──
+Route::get('/StatistiquesAdmi/VueGenerale', [StatsAdmiController::class, 'vueGenerale'])->name('stats.vueGenerale');
+Route::get('/StatistiquesAdmi/Indicateur', [StatsAdmiController::class, 'indicateur'])->name('stats.indicateur');
 
 // Routes de création pour chaque entité
 Route::post('/Donnees/Region', [DonneesController::class, 'storeRegion'])->name('donnees.storeRegion');

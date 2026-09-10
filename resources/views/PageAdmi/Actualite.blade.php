@@ -8,7 +8,7 @@
   ══════════════════════════════════════════════════════════════
 --}}
 
-<div style="display:flex; height:calc(100vh - var(--hdr)); margin-top:var(--hdr);">
+<div class="admin-layout" style="display:flex; height:calc(100vh - var(--hdr)); margin-top:var(--hdr);">
 
     {{-- ═══ SIDEBAR GAUCHE ═══ --}}
     <aside class="app-sidebar" style="background:var(--white); border-right:1px solid var(--border); padding:20px 16px; display:flex; flex-direction:column; gap:6px; overflow-y:auto;">
@@ -153,7 +153,7 @@
     </aside>
 
     {{-- ═══ ZONE PRINCIPALE ═══ --}}
-    <main style="flex:1; overflow-y:auto; padding:24px 28px;">
+    <main style="flex:1; overflow-y:auto; padding:24px 28px;" class="admin-main">
 
         {{-- Bandeau d'erreurs --}}
         @if($errors->any() || session('error'))
@@ -179,7 +179,7 @@
         </div>
 
         {{-- ═══ TABLEAU ═══ --}}
-        <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
+        <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; overflow-x:auto;">
             <table style="width:100%; border-collapse:collapse; font-size:13px;">
                 <thead>
                     <tr style="background:var(--surface2); text-align:left;">
@@ -689,7 +689,7 @@
         }
 
         commentaires.forEach(function(c) {
-            const estLue = c.statut === 'lue';
+            const estLue = c.statut === 'lu';
             const badge = estLue
                 ? '<span style="font-size:10px; font-weight:600; color:#267a47; background:#e8f5e9; padding:2px 8px; border-radius:10px;">Lu</span>'
                 : '<span style="font-size:10px; font-weight:600; color:#c0392b; background:#fdecea; padding:2px 8px; border-radius:10px;">En attente</span>';
@@ -729,7 +729,7 @@
                     let comms = [];
                     try { comms = JSON.parse(row.dataset.commentaires || '[]'); } catch {}
                     const c = comms.find(x => x.id === id);
-                    if (c) c.statut = 'lue';
+                    if (c) c.statut = 'lu';
                     row.dataset.commentaires = JSON.stringify(comms);
                     renderCommentaires(comms);
                 }
