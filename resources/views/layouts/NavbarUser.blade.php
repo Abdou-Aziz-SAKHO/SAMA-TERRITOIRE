@@ -1,6 +1,6 @@
 <header id="hdr">
    <a class="logo" href="{{ url('/') }}">
-        <img src="{{ asset('assets/img/Territoire.png') }}" alt="Logo SAMA TERRITOIRE" class="logo-img">
+        <img src="{{ asset('assets/img/TERRITOIRE.webp') }}" alt="Logo SAMA TERRITOIRE" class="logo-img">
     </a>
 
     {{-- Hamburger (affiché sur petit écran) --}}
@@ -12,7 +12,8 @@
     <button class="nav-btn active" data-href="{{ url('/') }}"><i class="fa-solid fa-home"></i> Accueil</button>
     <button class="nav-btn " data-href="{{ url('cartographie') }}"><i class="fa-solid fa-map"></i> Cartographie</button>
     <button class="nav-btn " data-href="{{ url('statistique') }}"><i class="fa-solid fa-chart-bar"></i> Statistiques</button>
-    <button class="nav-btn" data-href="{{ url('climat') }}"><i class="fa-solid fa-temperature-high"></i> Changements Climatiques<span class="badge-new">Nouveau</span></button>
+    <button class="nav-btn" data-href="{{ url('climat') }}"><i class="fa-solid fa-temperature-high"></i> Changements Climatiques</button>
+    <button class="nav-btn " data-href="{{ url('apropos') }}"><i class="fa-solid fa-circle-info"></i> À propos</button>
   </nav>
 
   <script>

@@ -1,12 +1,12 @@
 <footer style="background:#1a2d22; color:rgba(255,255,255,0.7); font-family:'DM Sans',sans-serif; margin-top:auto;">
     <div style="max-width:1100px; margin:0 auto; padding:32px 24px 20px;">
 
-        <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:32px; margin-bottom:24px;">
+        <div class="footer-grid" style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:32px; margin-bottom:24px;">
 
             {{-- Logo + Projet --}}
             <div>
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-                    <img src="{{ asset('assets/img/TERRITOIRE.png') }}" alt="Logo" style="height:28px; ">
+                    <img src="{{ asset('assets/img/TERRITOIRE.webp') }}" alt="Logo" style="height:28px; ">
                     {{-- <span style="font-family:'Syne',sans-serif; font-weight:700; font-size:14px; color:#fff;">SAMA TERRITOIRE</span> --}}
                 </div>
                 <p style="font-size:12px; line-height:1.6; color:rgba(255,255,255,0.5); margin:0;">
@@ -48,9 +48,23 @@
         </div>
 
         {{-- Bas --}}
-        <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <div class="footer-bottom" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
             <span style="font-size:11px; color:rgba(255,255,255,0.35);">&copy; {{ date('Y') }} SAMA TERRITOIRE — Tous droits réservés</span>
             <span style="font-size:10px; color:rgba(255,255,255,0.3);">ARD Kaolack · Données terrain</span>
         </div>
     </div>
 </footer>
+
+<style>
+  @media (max-width: 768px) {
+    .footer-grid {
+      grid-template-columns: 1fr !important;
+      gap: 24px !important;
+    }
+    .footer-bottom {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 10px;
+    }
+  }
+</style>

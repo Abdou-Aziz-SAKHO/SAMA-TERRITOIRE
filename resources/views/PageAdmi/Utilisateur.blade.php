@@ -105,9 +105,22 @@
                                 $isSelf = $connecte && $connecte->id === $u->id;
                                 $peutModifier = $connecte && ($connecte->isSuperAdmin() || !$u->isSuperAdmin());
                                 $peutBloquer = $connecte && $connecte->isSuperAdmin() && !$isSelf;
-                                $dataEdit = json_encode(['prenom' => $u->prenom, 'nom' => $u->nom, 'email' => $u->email, 'telephone' => $u->telephone, 'cni' => $u->cni], JSON_UNESCAPED_UNICODE);
+                                $dataEdit = json_encode(['id' => $u->id, 'prenom' => $u->prenom, 'nom' => $u->nom, 'email' => $u->email, 'telephone' => $u->telephone, 'cni' => $u->cni], JSON_UNESCAPED_UNICODE);
+                                $dataConsult = json_encode([
+                                    'id' => $u->id,
+                                    'prenom' => $u->prenom,
+                                    'nom' => $u->nom,
+                                    'email' => $u->email,
+                                    'telephone' => $u->telephone,
+                                    'cni' => $u->cni,
+                                    'role' => $u->libelleRole(),
+                                    'isSuper' => $u->isSuperAdmin(),
+                                    'statut' => $u->isActif() ? 'Actif' : 'Bloqué',
+                                    'actif' => $u->isActif(),
+                                    'creeLe' => optional($u->created_at)->format('d/m/Y'),
+                                ], JSON_UNESCAPED_UNICODE);
                             @endphp
-                            <tr style="border-bottom:1px solid var(--border2);" data-user="{{ $u->id }}" data-edit="{{ $dataEdit }}">
+                            <tr style="border-bottom:1px solid var(--border2);" data-user="{{ $u->id }}" data-edit="{{ $dataEdit }}" data-consulter="{{ $dataConsult }}">
                                 <td style="padding:12px 16px;">
                                     <div style="display:flex; align-items:center; gap:10px;">
                                         <div style="width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:#fff; background:{{ $u->isSuperAdmin() ? '#1d4ed8' : '#2d9b5f' }};">
@@ -133,6 +146,11 @@
                                 </td>
                                 <td style="padding:12px 16px;">
                                     <div style="display:flex; gap:6px;">
+                                        <button type="button" onclick="ouvrirConsultation({{ $u->id }})" title="Consulter"
+                                            style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--text); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+
                                         @if($peutModifier)
                                             <button type="button" onclick="openModifier({{ $u->id }})" title="Modifier"
                                                 style="width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--text); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px;">
@@ -265,6 +283,41 @@
     </div>
 </div>
 
+{{-- ════════════════════════════════════════ FICHE CONSULTATION ════════════════════════════════════════ --}}
+<div id="modal-consulter" class="modal-overlay">
+    <div class="modal-card" style="max-width:520px;">
+        <div class="modal-card-header">
+            <h3><i class="fa-solid fa-address-card" style="margin-right:6px;"></i> Fiche de consultation</h3>
+            <button type="button" class="modal-close" onclick="closeModalUtil('modal-consulter')">&times;</button>
+        </div>
+        <div class="modal-card-body">
+            <div style="text-align:center; margin-bottom:16px;">
+                <div id="cs-avatar" style="width:56px; height:56px; margin:0 auto; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:20px; color:#fff; background:#2d9b5f;">--</div>
+                <div id="cs-nom" style="font-size:17px; font-weight:700; color:var(--text); margin-top:8px;"></div>
+                <div id="cs-badges" style="margin-top:6px;"></div>
+            </div>
+            <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:4px 16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border2);">
+                    <span style="color:var(--text-muted); font-size:12px;">Email</span>
+                    <strong id="cs-email" style="color:var(--text); font-size:13px; text-align:right; word-break:break-all;"></strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border2);">
+                    <span style="color:var(--text-muted); font-size:12px;">Téléphone</span>
+                    <strong id="cs-telephone" style="color:var(--text); font-size:13px;"></strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border2);">
+                    <span style="color:var(--text-muted); font-size:12px;">CNI</span>
+                    <strong id="cs-cni" style="color:var(--text); font-size:13px;"></strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0;">
+                    <span style="color:var(--text-muted); font-size:12px;">Compte créé le</span>
+                    <strong id="cs-cree" style="color:var(--text); font-size:13px;"></strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- ════════════════════════════════════════ CONFIRMATION STATUT ════════════════════════════════════════ --}}
 <div id="modal-statut" class="modal-overlay">
     <div class="modal-card" style="max-width:440px;">
@@ -322,20 +375,76 @@
     function closeModalUtil(id) { document.getElementById(id).classList.remove('active'); }
     function openFormModal(id) { document.getElementById(id).classList.add('active'); }
 
+    // ── Données du compte connecté (pour « Mon profil » et « Paramètres ») ──
+    const CONNECTE = @if($connecte) {!! json_encode([
+        'id' => $connecte->id,
+        'prenom' => $connecte->prenom,
+        'nom' => $connecte->nom,
+        'email' => $connecte->email,
+        'telephone' => $connecte->telephone,
+        'cni' => $connecte->cni,
+        'role' => $connecte->libelleRole(),
+        'isSuper' => $connecte->isSuperAdmin(),
+        'statut' => $connecte->isActif() ? 'Actif' : 'Bloqué',
+        'actif' => $connecte->isActif(),
+        'creeLe' => optional($connecte->created_at)->format('d/m/Y'),
+    ], JSON_UNESCAPED_UNICODE) !!} @else null @endif;
+
     // ── Modifier (les données sont injectées dans des data-attributes) ──
     function openModifier(id) {
-        const row = document.querySelector('#onglet-comptes tr[data-user="' + id + '"]');
-        if (!row) return;
-        const data = JSON.parse(row.getAttribute('data-edit').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&'));
+        let data;
+        if (typeof id === 'object' && id !== null) {
+            data = id;
+        } else {
+            const row = document.querySelector('#onglet-comptes tr[data-user="' + id + '"]');
+            if (!row) return;
+            data = JSON.parse(row.getAttribute('data-edit').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&'));
+        }
         document.getElementById('ed-prenom').value = data.prenom;
         document.getElementById('ed-nom').value = data.nom;
         document.getElementById('ed-email').value = data.email;
         document.getElementById('ed-telephone').value = data.telephone;
         document.getElementById('ed-cni').value = data.cni || '';
         document.getElementById('ed-password').value = '';
-        document.getElementById('edit-user-form').action = '/Utilisateurs/' + id;
+        document.getElementById('edit-user-form').action = '/Utilisateurs/' + data.id;
         openFormModal('modal-modifier');
     }
+
+    // ── Fiche de consultation (lecture seule) ──
+    function ouvrirConsultation(id) {
+        let data;
+        if (typeof id === 'object' && id !== null) {
+            data = id;
+        } else {
+            const row = document.querySelector('#onglet-comptes tr[data-user="' + id + '"]');
+            if (!row) return;
+            data = JSON.parse(row.getAttribute('data-consulter').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&'));
+        }
+        const initials = ((data.prenom || '?').charAt(0) + (data.nom || '').charAt(0)).toUpperCase();
+        document.getElementById('cs-avatar').textContent = initials;
+        document.getElementById('cs-avatar').style.background = data.isSuper ? '#1d4ed8' : '#2d9b5f';
+        document.getElementById('cs-nom').textContent = (data.prenom || '') + ' ' + (data.nom || '');
+        document.getElementById('cs-badges').innerHTML =
+            '<span style="display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; background:' + (data.isSuper ? '#eef4ff' : '#eefaf1') + '; color:' + (data.isSuper ? '#1d4ed8' : '#1d8a4e') + ';">' + escHtml(data.role) + '</span> ' +
+            '<span style="display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; background:' + (data.actif ? '#eefaf1' : '#fdecec') + '; color:' + (data.actif ? '#1d8a4e' : '#b3261e') + ';">' + escHtml(data.statut) + '</span>';
+        document.getElementById('cs-email').textContent = data.email;
+        document.getElementById('cs-telephone').textContent = data.telephone || '—';
+        document.getElementById('cs-cni').textContent = data.cni || '—';
+        document.getElementById('cs-cree').textContent = data.creeLe || '—';
+        openFormModal('modal-consulter');
+    }
+
+    // ── Ouverture automatique via la navbar (« Mon profil » / « Paramètres ») ──
+    (function() {
+        const params = new URLSearchParams(window.location.search);
+        if (CONNECTE) {
+            if (params.get('profil') === 'm') {
+                ouvrirConsultation(CONNECTE);
+            } else if (params.get('modifier') === 'm') {
+                openModifier(CONNECTE);
+            }
+        }
+    })();
 
     // ── Confirmation bloquer / débloquer ──
     function confirmerStatut(id, action, nom) {

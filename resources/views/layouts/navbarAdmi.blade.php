@@ -2,7 +2,7 @@
 
     {{-- Logo --}}
     <a class="logo" href="{{ url('/Dashboard') }}">
-        <img src="{{ asset('assets/img/Territoire.png') }}" alt="Logo SAMA TERRITOIRE" class="logo-img">
+        <img src="{{ asset('assets/img/TERRITOIRE.webp') }}" alt="Logo SAMA TERRITOIRE" class="logo-img">
     </a>
 
 
@@ -109,19 +109,19 @@
 
             <div class="account-menu">
 
-                <button class="account-menu-item" data-href="{{ url('/CompteAdmi') }}">
+                <button class="account-menu-item" data-href="{{ url('/UtilisateursAdmi?profil=m') }}" title="Voir ma fiche">
                     <i class="fa-solid fa-user"></i>
                     Mon profil
                 </button>
 
-                <button class="account-menu-item" data-href="{{ url('/ParametresAdmi') }}">
+                <button class="account-menu-item" data-href="{{ url('/UtilisateursAdmi?modifier=m') }}" title="Modifier mes informations">
                     <i class="fa-solid fa-gear"></i>
                     Paramètres
                 </button>
 
                 <div class="account-divider"></div>
 
-                <button class="account-menu-item logout">
+                <button class="account-menu-item logout" data-href="{{ url('/logout') }}">
                     <i class="fa-solid fa-right-from-bracket"></i>
                     Déconnexion
                 </button>

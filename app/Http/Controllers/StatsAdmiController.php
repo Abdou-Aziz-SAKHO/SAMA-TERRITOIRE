@@ -91,11 +91,23 @@ class StatsAdmiController extends Controller
      */
     public function vueGenerale(Request $request)
     {
-        // ── Filtres : niveau territorial + entité (cascade) ──
+        $data = $this->vueGeneraleData($request);
+
+        return view('PageAdmi.StatsAdmi.VueGenerale', $data);
+    }
+
+    /**
+     * Calcule toutes les données de la vue générale (filtres, KPI, graphiques).
+     * Réutilisable par les contrôleurs publics sans dupliquer la logique.
+     */
+    public function vueGeneraleData(Request $request): array
+    {
+        // ── Filtres : niveau territorial + entité (cascade) + secteur ──
         $niveau = in_array($request->get('niveau'), ['region', 'departement', 'commune', 'localite'], true)
             ? $request->get('niveau')
             : null;
         $entiteId = $request->integer('entite');
+        $secteurId = $request->integer('secteur');
 
         // ── Référentiels pour les filtres en cascade (avec région dérivée) ──
         $regions = Region::orderBy('nom')->get();
@@ -109,6 +121,9 @@ class StatsAdmiController extends Controller
             ->join('departements', 'departements.id', '=', 'communes.departement_id')
             ->orderBy('localites.nom')
             ->get();
+
+        // ── Référentiel des secteurs pour le filtre ──
+        $secteurs = Secteur::orderBy('nom')->get();
 
         // ── Libellé du périmètre choisi ──
         $labels = ['region' => 'Région', 'departement' => 'Département', 'commune' => 'Commune', 'localite' => 'Localité'];
@@ -128,12 +143,19 @@ class StatsAdmiController extends Controller
         if ($niveau) {
             $scopeLabel = $entiteId ? ($labels[$niveau].' : '.$entiteNom) : $pluriels[$niveau];
         }
+        $secteurNom = $secteurs->firstWhere('id', $secteurId)?->nom ?? '';
+        if ($secteurNom) {
+            $scopeLabel .= ($scopeLabel ? ' · ' : '').'Secteur '.$secteurNom;
+        }
 
         // ── Périmètre territorial (jeux d'identifiants du niveau choisi) ──
         $scope = $this->scopeTerritoriale($niveau, $entiteId);
 
         // ── Infrastructures du périmètre ──
         $infraQuery = Infrastructure::query()->with(['secteur', 'commune', 'departement']);
+        if ($secteurId) {
+            $infraQuery->where('secteur_id', $secteurId);
+        }
         if ($niveau === 'localite') {
             $infraQuery->whereHas('localitesCouvertes', fn ($q) => $q->whereIn('localite_id', $scope['localites']));
         } elseif ($niveau) {
@@ -297,15 +319,15 @@ class StatsAdmiController extends Controller
             ->map(fn ($c, $y) => ['annee' => (int) $y, 'total' => $c])
             ->sortBy('annee')->values();
 
-        return view('PageAdmi.StatsAdmi.VueGenerale', compact(
-            'regions', 'regionDepts', 'communes', 'localites',
-            'niveau', 'entiteId', 'scopeLabel',
+        return compact(
+            'regions', 'regionDepts', 'communes', 'localites', 'secteurs',
+            'niveau', 'entiteId', 'secteurId', 'scopeLabel',
             'totalInfra',
             'popTotale', 'menages',
             'nbRegions', 'nbDepts', 'nbCommunes', 'nbLocalites',
             'cascade', 'repartition', 'repartitionLabel', 'topUnits', 'populationHf',
             'parSecteur', 'secteursDetail', 'parEtat', 'evolution'
-        ));
+        );
     }
 
     /**

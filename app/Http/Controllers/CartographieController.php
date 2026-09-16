@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\StatsAdmiController;
 use Illuminate\Http\Request;
 
 class CartographieController extends Controller
@@ -17,8 +18,10 @@ class CartographieController extends Controller
     {
         return view('PageUser.climat');
     }
-    public function statistique()
+    public function statistique(Request $request)
     {
-        return view('PageUser.statistique');
+        $data = app(StatsAdmiController::class)->vueGeneraleData($request);
+
+        return view('PageUser.statistique', $data);
     }
 }

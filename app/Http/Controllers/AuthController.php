@@ -88,6 +88,17 @@ class AuthController extends Controller
 
     }
 
+    public function logout()
+    {
+        Auth::logout();
+
+        // On invalide la session et on régénère le token pour éviter la fixation de session.
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+
+        return redirect()->route('login');
+    }
+
     public function showForgotPassword()
     {
         return view('Authentification.ForgotPassword');

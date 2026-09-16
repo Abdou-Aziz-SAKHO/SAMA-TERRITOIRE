@@ -1,5 +1,16 @@
 @extends('AppUser')
 
+@push('page-css')
+<link rel="stylesheet" href="{{ asset('assets/vendor/leaflet/leaflet.css') }}">
+@endpush
+
+@push('page-scripts')
+<script src="{{ asset('assets/vendor/leaflet/leaflet.js') }}"></script>
+<script src="{{ asset('assets/vendor/chartjs/chart.umd.min.js') }}"></script>
+<script src="{{ asset('assets/websig/js/data-infrastructures.js') }}"></script>
+<script src="{{ asset('assets/websig/js/data-climate.js') }}"></script>
+@endpush
+
 @section('content')
 
 
@@ -153,8 +164,6 @@
   </div><!-- /clim-main -->
 </div><!-- /page-climat -->
 
-<script src="assets/data.js"></script>
-<script src="assets/script.js"></script>
 <script>
 // ── CLIMAT ────────────────────────────────────────────────
 const luMaps={}, luCharts={};
@@ -355,6 +364,4 @@ document.addEventListener('DOMContentLoaded', ()=>{
   updateClimHeader();
 });
 </script>
-<script src="{{asset('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js')}}"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 @endsection

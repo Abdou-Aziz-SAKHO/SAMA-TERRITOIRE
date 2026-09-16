@@ -2,12 +2,77 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Actualite;
 use App\Models\Commentaire;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
 class CommentaireController extends Controller
 {
+    /**
+     * Soumission publique (page d'accueil) d'un commentaire / d'une plainte,
+     * sans authentification. Enregistre le message avec le statut "en attente"
+     * pour validation par l'équipe.
+     */
+    public function envoyer(Request $request)
+    {
+        $validated = $request->validate([
+            'nom'     => 'nullable|string|max:255',
+            'email'   => 'required|email|max:255',
+            'type'    => 'required|in:commentaire,plainte',
+            'message' => 'required|string|max:5000',
+        ]);
+
+        Commentaire::create([
+            'nom'          => $validated['nom'] ?? null,
+            'email'        => $validated['email'],
+            'type'         => $validated['type'],
+            'message'      => $validated['message'],
+            'statut'       => 'en_attente',
+            'actualite_id' => null,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'succes'  => true,
+                'message' => 'Votre message a bien été envoyé. Merci pour votre contribution !',
+            ]);
+        }
+
+        return back()->with('succes_commentaire', 'Votre message a bien été envoyé. Merci pour votre contribution !');
+    }
+
+    /**
+     * Soumission publique d'un commentaire rattaché à une actualité
+     * (bouton « Commenter » de la mosaïque d'actualités).
+     */
+    public function commenterActualite(Request $request, Actualite $actualite)
+    {
+        $validated = $request->validate([
+            'nom'     => 'nullable|string|max:255',
+            'email'   => 'required|email|max:255',
+            'message' => 'required|string|max:5000',
+        ]);
+
+        Commentaire::create([
+            'nom'          => $validated['nom'] ?? null,
+            'email'        => $validated['email'],
+            'type'         => 'commentaire',
+            'message'      => $validated['message'],
+            'statut'       => 'en_attente',
+            'actualite_id' => $actualite->id,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'succes'  => true,
+                'message' => 'Votre commentaire a été ajouté. Il sera visible après modération.',
+            ]);
+        }
+
+        return back()->with('succes_actualite', 'Votre commentaire a été ajouté. Il sera visible après modération.');
+    }
+
     /**
      * Page admin : liste des commentaires indépendants (pas liés à une actualité).
      */

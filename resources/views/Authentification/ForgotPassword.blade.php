@@ -325,7 +325,7 @@
     </svg>
 
     <div class="brandmark">
-      <span class="logo"><img src="{{ asset('assets/img/TERRITOIRE-login.png') }}" alt="Logo SAMA TERRITOIRE" class="logo-img"></span>
+      <span class="logo"><img src="{{ asset('assets/img/TERRITOIRE-LOGIN.webp') }}" alt="Logo SAMA TERRITOIRE" class="logo-img"></span>
     </div>
 
     <div class="territory-copy">

@@ -11,10 +11,11 @@ use App\Http\Controllers\UtilisateurController;
 use App\Http\Controllers\CommentaireController;
 use App\Http\Controllers\StatsAdmiController;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\WelcomeController;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [WelcomeController::class, 'index']);
+Route::get('/actualites', [WelcomeController::class, 'toutesLesActualites'])->name('actualites.publiques');
+Route::get('/apropos', [WelcomeController::class, 'apropos'])->name('apropos');
 //    route pour les utlisateur simple
 Route::get('/cartographie', [CartographieController::class, 'index'])->name('cartographie');
 Route::get('/climat', [CartographieController::class, 'climat'])->name('climat');
@@ -33,6 +34,8 @@ Route::get('/CommentairesAdmi', [CommentaireController::class, 'index'])->name('
 Route::put('/Commentaires/{commentaire}/lu', [CommentaireController::class, 'marquerLu'])->name('commentaires.marquerLu');
 Route::put('/Commentaires/{commentaire}/traite', [CommentaireController::class, 'marquerTraite'])->name('commentaires.marquerTraite');
 Route::delete('/Commentaires/{commentaire}', [CommentaireController::class, 'destroy'])->name('commentaires.destroy');
+Route::post('/Commentaires/Envoyer', [CommentaireController::class, 'envoyer'])->name('commentaires.envoyer');
+Route::post('/Actualites/Actualite/{actualite}/Commentaire', [CommentaireController::class, 'commenterActualite'])->name('actualites.commenter');
 Route::post('/Commentaires/export-pdf', [CommentaireController::class, 'exportPdf'])->name('commentaires.exportPdf');
 
 // ── Statistiques (Admin) ──
@@ -100,6 +103,7 @@ Route::put('/Utilisateurs/{user}/statut', [UtilisateurController::class, 'toggle
 // Route pour se connecter et se deconnecter
 Route::get('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/login', [AuthController::class, 'auth'])->name('login.post');
+Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Route mot de passe oublié
 Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('forgot-password');

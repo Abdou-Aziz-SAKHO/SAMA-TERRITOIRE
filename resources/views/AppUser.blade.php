@@ -5,12 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SAMA TERRITOIRE</title>
 
-<link rel="stylesheet" href="{{ asset('assets/vendor/leaflet/leaflet.css') }}">
-<script src="{{ asset('assets/vendor/leaflet/leaflet.js') }}"></script>
-<script src="{{ asset('assets/vendor/chartjs/chart.umd.min.js') }}"></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{asset('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css')}}" integrity="..." crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
 <link rel="stylesheet" href="{{ asset('assets/websig/css/style.css') }}">
+@stack('page-css')
 </head>
 <body>
 
@@ -22,9 +20,8 @@
 
 
 
-{{-- Données (à charger avant app.js) --}}
-<script src="{{ asset('assets/websig/js/data-infrastructures.js') }}"></script>
-<script src="{{ asset('assets/websig/js/data-climate.js') }}"></script>
+{{-- Données & libs spécifiques à la page (à charger avant app.js) --}}
+@stack('page-scripts')
 <script src="{{ asset('assets/websig/js/app.js') }}"></script>
 <script src="{{ asset('assets/websig/js/responsive-tables.js') }}"></script>
 

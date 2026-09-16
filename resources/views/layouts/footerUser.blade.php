@@ -1,12 +1,12 @@
 <footer style="background:#1a2d22; color:rgba(255,255,255,0.7); font-family:'DM Sans',sans-serif; margin-top:auto;">
     <div style="max-width:1100px; margin:0 auto; padding:32px 24px 20px;">
 
-        <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:32px; margin-bottom:24px;">
+        <div class="footer-grid" style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:32px; margin-bottom:24px;">
 
             {{-- Logo + Projet --}}
             <div>
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-                    <img src="{{ asset('assets/img/Territoire.png') }}" alt="Logo" style="height:28px; ">
+                    <img src="{{ asset('assets/img/TERRITOIRE.webp') }}" alt="Logo" style="height:28px; ">
                     {{-- <span style="font-family:'Syne',sans-serif; font-weight:700; font-size:14px; color:#fff;">SAMA TERRITOIRE</span> --}}
                 </div>
                 <p style="font-size:12px; line-height:1.6; color:rgba(255,255,255,0.5); margin:0;">
@@ -22,6 +22,7 @@
                     <a href="{{ route('cartographie') }}" style="font-size:12px; color:rgba(255,255,255,0.6); text-decoration:none; transition:color .2s;">Cartographie</a>
                     <a href="{{ route('statistique') }}" style="font-size:12px; color:rgba(255,255,255,0.6); text-decoration:none; transition:color .2s;">Statistiques</a>
                     <a href="{{ route('climat') }}" style="font-size:12px; color:rgba(255,255,255,0.6); text-decoration:none; transition:color .2s;">Changements Climatiques</a>
+                    <a href="{{ route('apropos') }}" style="font-size:12px; color:rgba(255,255,255,0.6); text-decoration:none; transition:color .2s;">A Propos</a>
                 </div>
             </div>
 
@@ -37,9 +38,13 @@
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:#8FCBA5; flex-shrink:0;"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
                         <span>ardedekaolack@yahoo.fr</span>
                     </div>
+                    <a href="https://arddekaolack.com" target="_blank" rel="noopener" title="Site web" style="display:flex; align-items:center; gap:8px; font-size:12px; color:rgba(255,255,255,0.6); text-decoration:none; transition:color .2s;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:#8FCBA5; flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                        <span>arddekaolack.com</span>
+                    </a>
                     <div style="display:flex; align-items:center; gap:8px; font-size:12px;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:#8FCBA5; flex-shrink:0;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                        <span>+221 33 941 77 53/span>
+                        <span>+221 33 941 77 53</span>
                     </div>
                 </div>
             </div>
@@ -47,7 +52,7 @@
         </div>
 
         {{-- Bas --}}
-        <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <div class="footer-bottom" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
             <span style="font-size:11px; color:rgba(255,255,255,0.35);">&copy; {{ date('Y') }} SAMA TERRITOIRE — Tous droits réservés</span>
             <div style="display:flex; align-items:center; gap:12px;">
                 <span style="font-size:10px; color:rgba(255,255,255,0.3);">ARD Kaolack · Données terrain</span>
@@ -60,3 +65,17 @@
 
     </div>
 </footer>
+
+<style>
+  @media (max-width: 768px) {
+    .footer-grid {
+      grid-template-columns: 1fr !important;
+      gap: 24px !important;
+    }
+    .footer-bottom {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 10px;
+    }
+  }
+</style>

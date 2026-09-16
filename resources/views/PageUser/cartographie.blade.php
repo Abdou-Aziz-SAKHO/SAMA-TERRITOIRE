@@ -1,5 +1,14 @@
 @extends('AppUser')
 
+@push('page-css')
+<link rel="stylesheet" href="{{ asset('assets/vendor/leaflet/leaflet.css') }}">
+@endpush
+
+@push('page-scripts')
+<script src="{{ asset('assets/vendor/leaflet/leaflet.js') }}"></script>
+<script src="{{ asset('assets/websig/js/data-infrastructures.js') }}"></script>
+@endpush
+
 @section('content')
     <div id="page-carto" class="page">
         <div class="sidebar">
