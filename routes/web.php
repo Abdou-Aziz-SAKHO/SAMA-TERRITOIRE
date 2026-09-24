@@ -1,17 +1,17 @@
 <?php
 
+use App\Http\Controllers\ActualiteController;
 use App\Http\Controllers\AdmiController;
 use App\Http\Controllers\AuthController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CartographieController;
-use App\Http\Controllers\DonneesController;
-use App\Http\Controllers\DocumentController;
-use App\Http\Controllers\ActualiteController;
-use App\Http\Controllers\UtilisateurController;
+use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\CommentaireController;
+use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\DonneesController;
 use App\Http\Controllers\StatsAdmiController;
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\UtilisateurController;
 use App\Http\Controllers\WelcomeController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', [WelcomeController::class, 'index']);
 Route::get('/actualites', [WelcomeController::class, 'toutesLesActualites'])->name('actualites.publiques');
@@ -21,6 +21,11 @@ Route::get('/cartographie', [CartographieController::class, 'index'])->name('car
 Route::get('/climat', [CartographieController::class, 'climat'])->name('climat');
 Route::get('/statistique', [CartographieController::class, 'statistique'])->name('statistique');
 
+// ── Assistant SAMA TERRITOIRE (chatbot) ──
+// POST JSON protégé par CSRF + limitation 15 messages/min par IP.
+Route::post('/chatbot/message', [ChatbotController::class, 'chat'])
+    ->middleware('throttle:15,1')
+    ->name('chatbot.message');
 
 // Route pour Les Administrateurs
 Route::get('/Dashboard', [AdmiController::class, 'Index'])->name('Dashboard');
@@ -67,7 +72,6 @@ Route::delete('/Donnees/Localite/{localite}', [DonneesController::class, 'destro
 Route::delete('/Donnees/Secteur/{secteur}', [DonneesController::class, 'destroySecteur'])->name('donnees.destroySecteur');
 Route::delete('/Donnees/Infrastructure/{infrastructure}', [DonneesController::class, 'destroyInfrastructure'])->name('donnees.destroyInfrastructure');
 
-
 // ── Documents (fichiers Excel / Word / PDF) ──
 Route::post('/Donnees/Document', [DocumentController::class, 'store'])->name('donnees.storeDocument');
 Route::get('/Documents/{document}/apercu', [DocumentController::class, 'preview'])->name('documents.preview');
@@ -99,7 +103,6 @@ Route::get('/UtilisateursAdmi', [UtilisateurController::class, 'index'])->name('
 Route::put('/Utilisateurs/{user}', [UtilisateurController::class, 'update'])->name('utilisateurs.update');
 Route::put('/Utilisateurs/{user}/statut', [UtilisateurController::class, 'toggleStatut'])->name('utilisateurs.statut');
 
-
 // Route pour se connecter et se deconnecter
 Route::get('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/login', [AuthController::class, 'auth'])->name('login.post');
@@ -108,4 +111,3 @@ Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 // Route mot de passe oublié
 Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('forgot-password');
 Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('forgot-password.post');
-

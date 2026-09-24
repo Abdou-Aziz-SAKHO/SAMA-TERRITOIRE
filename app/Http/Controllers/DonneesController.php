@@ -2,21 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Region;
-use App\Models\Departement;
-use App\Models\Commune;
-use App\Models\Localite;
-use App\Models\Secteur;
-use App\Models\Infrastructure;
-use App\Models\Indicateur;
-use App\Models\Photo;
 use App\Models\Actualite;
+use App\Models\Commune;
+use App\Models\Departement;
 use App\Models\Document;
+use App\Models\Indicateur;
+use App\Models\Infrastructure;
+use App\Models\Localite;
+use App\Models\Photo;
+use App\Models\Region;
+use App\Models\Secteur;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Database\QueryException;
 use Illuminate\Validation\Rule;
 
 class DonneesController extends Controller
@@ -47,13 +49,13 @@ class DonneesController extends Controller
 
         // ── Régions : pas de filtre parent ──
         $regions = Region::orderBy('nom')
-            ->when($q, fn($query) => $query->where('nom', 'like', "%{$q}%"))
+            ->when($q, fn ($query) => $query->where('nom', 'like', "%{$q}%"))
             ->paginate(10, ['*'], 'regions_page');
 
         // ── Départements : filtrés par région si sélectionnée ──
         $departements = Departement::with('region')
-            ->when($regionId, fn($query) => $query->where('region_id', $regionId))
-            ->when($q, fn($query) => $query->where('nom', 'like', "%{$q}%"))
+            ->when($regionId, fn ($query) => $query->where('region_id', $regionId))
+            ->when($q, fn ($query) => $query->where('nom', 'like', "%{$q}%"))
             ->orderBy('nom')
             ->paginate(10, ['*'], 'departements_page');
 
@@ -61,9 +63,9 @@ class DonneesController extends Controller
         //    (une commune est visible si le département auquel elle appartient
         //    se situe dans la région sélectionnée).
         $communes = Commune::with('departement')
-            ->when($departementId, fn($query) => $query->where('departement_id', $departementId))
-            ->when(!$departementId && $regionId, fn($query) => $query->whereHas('departement', fn($d) => $d->where('region_id', $regionId)))
-            ->when($q, fn($query) => $query->where('nom', 'like', "%{$q}%"))
+            ->when($departementId, fn ($query) => $query->where('departement_id', $departementId))
+            ->when(! $departementId && $regionId, fn ($query) => $query->whereHas('departement', fn ($d) => $d->where('region_id', $regionId)))
+            ->when($q, fn ($query) => $query->where('nom', 'like', "%{$q}%"))
             ->orderBy('nom')
             ->paginate(10, ['*'], 'communes_page');
 
@@ -73,37 +75,37 @@ class DonneesController extends Controller
         //    - Sinon un département affiche les localités de ses communes.
         //    - Sinon une région affiche les localités des communes de ses départements.
         $localites = Localite::with('commune')
-            ->when($communeId, fn($query) => $query->where('commune_id', $communeId))
-            ->when(!$communeId && $departementId, fn($query) => $query->whereHas('commune', fn($c) => $c->where('departement_id', $departementId)))
-            ->when(!$communeId && !$departementId && $regionId, fn($query) => $query->whereHas('commune.departement', fn($d) => $d->where('region_id', $regionId)))
-            ->when($q, fn($query) => $query->where('nom', 'like', "%{$q}%"))
+            ->when($communeId, fn ($query) => $query->where('commune_id', $communeId))
+            ->when(! $communeId && $departementId, fn ($query) => $query->whereHas('commune', fn ($c) => $c->where('departement_id', $departementId)))
+            ->when(! $communeId && ! $departementId && $regionId, fn ($query) => $query->whereHas('commune.departement', fn ($d) => $d->where('region_id', $regionId)))
+            ->when($q, fn ($query) => $query->where('nom', 'like', "%{$q}%"))
             ->orderBy('nom')
             ->paginate(10, ['*'], 'localites_page');
 
         // ── Secteurs : pas de filtre parent ──
         $secteurs = Secteur::orderBy('nom')
-            ->when($q, fn($query) => $query->where('nom', 'like', "%{$q}%"))
+            ->when($q, fn ($query) => $query->where('nom', 'like', "%{$q}%"))
             ->paginate(10, ['*'], 'secteurs_page');
 
         // ── Infrastructures : rattachées à 1 département OU 1 commune OU 1..n localités ──
         // Les filtres région/département "traversent" la commune quand l'infrastructure
         // n'est pas rattachée directement à un département.
         $infrastructures = Infrastructure::with(['departement', 'commune.departement', 'secteur', 'localitesCouvertes', 'indicateurs', 'photos'])
-            ->when($regionId, fn($q) => $q->where(function ($q) use ($regionId) {
+            ->when($regionId, fn ($q) => $q->where(function ($q) use ($regionId) {
                 // Via le département direct OU via le département de la commune
-                $q->whereHas('departement', fn($d) => $d->where('region_id', $regionId))
-                  ->orWhereHas('commune.departement', fn($d) => $d->where('region_id', $regionId));
+                $q->whereHas('departement', fn ($d) => $d->where('region_id', $regionId))
+                    ->orWhereHas('commune.departement', fn ($d) => $d->where('region_id', $regionId));
             }))
-            ->when($departementId, fn($q) => $q->where(function ($q) use ($departementId) {
+            ->when($departementId, fn ($q) => $q->where(function ($q) use ($departementId) {
                 // Rattachement direct au département OU via sa commune
                 $q->where('departement_id', $departementId)
-                  ->orWhereHas('commune', fn($c) => $c->where('departement_id', $departementId));
+                    ->orWhereHas('commune', fn ($c) => $c->where('departement_id', $departementId));
             }))
-            ->when($communeId, fn($q) => $q->where('commune_id', $communeId))
-            ->when($secteurId, fn($q) => $q->where('secteur_id', $secteurId))
+            ->when($communeId, fn ($q) => $q->where('commune_id', $communeId))
+            ->when($secteurId, fn ($q) => $q->where('secteur_id', $secteurId))
             // Filtre par localité : passe désormais par la table des localités COUVERTES
-            ->when($localiteId, fn($q) => $q->whereHas('localitesCouvertes', fn($l) => $l->where('localites.id', $localiteId)))
-            ->when($q, fn($query) => $query->where('nom', 'like', "%{$q}%"))
+            ->when($localiteId, fn ($q) => $q->whereHas('localitesCouvertes', fn ($l) => $l->where('localites.id', $localiteId)))
+            ->when($q, fn ($query) => $query->where('nom', 'like', "%{$q}%"))
             ->orderBy('nom')
             ->paginate(10, ['*'], 'infrastructures_page');
 
@@ -127,15 +129,13 @@ class DonneesController extends Controller
             $filteredInfrastructures = $allInfrastructures->where('commune_id', $communeId);
         } elseif ($departementId) {
             $communesDept = $allCommunes->where('departement_id', $departementId)->pluck('id')->all();
-            $filteredInfrastructures = $allInfrastructures->filter(fn ($i) =>
-                $i->departement_id == $departementId
+            $filteredInfrastructures = $allInfrastructures->filter(fn ($i) => $i->departement_id == $departementId
                 || in_array($i->commune_id, $communesDept)
             )->values();
         } elseif ($regionId) {
-            $deptIds    = $allDepartements->where('region_id', $regionId)->pluck('id')->all();
+            $deptIds = $allDepartements->where('region_id', $regionId)->pluck('id')->all();
             $communeIds = $allCommunes->whereIn('departement_id', $deptIds)->pluck('id')->all();
-            $filteredInfrastructures = $allInfrastructures->filter(fn ($i) =>
-                in_array($i->departement_id, $deptIds)
+            $filteredInfrastructures = $allInfrastructures->filter(fn ($i) => in_array($i->departement_id, $deptIds)
                 || in_array($i->commune_id, $communeIds)
             )->values();
         } else {
@@ -148,32 +148,32 @@ class DonneesController extends Controller
         //    retrouver les documents du territoire choisi (directement ou via un
         //    niveau inférieur / une infrastructure).
         $documents = Document::with(['region', 'departement', 'commune', 'localite', 'infrastructure'])
-            ->when($regionId, fn($q) => $q->where(function ($q) use ($regionId) {
+            ->when($regionId, fn ($q) => $q->where(function ($q) use ($regionId) {
                 $q->where('region_id', $regionId)
-                  ->orWhereHas('departement', fn($d) => $d->where('region_id', $regionId))
-                  ->orWhereHas('commune.departement', fn($d) => $d->where('region_id', $regionId))
-                  ->orWhereHas('localite.commune.departement', fn($d) => $d->where('region_id', $regionId))
-                  ->orWhereHas('infrastructure', fn($i) => $i
-                      ->whereHas('departement', fn($d) => $d->where('region_id', $regionId))
-                      ->orWhereHas('commune.departement', fn($d) => $d->where('region_id', $regionId)));
+                    ->orWhereHas('departement', fn ($d) => $d->where('region_id', $regionId))
+                    ->orWhereHas('commune.departement', fn ($d) => $d->where('region_id', $regionId))
+                    ->orWhereHas('localite.commune.departement', fn ($d) => $d->where('region_id', $regionId))
+                    ->orWhereHas('infrastructure', fn ($i) => $i
+                        ->whereHas('departement', fn ($d) => $d->where('region_id', $regionId))
+                        ->orWhereHas('commune.departement', fn ($d) => $d->where('region_id', $regionId)));
             }))
-            ->when($departementId, fn($q) => $q->where(function ($q) use ($departementId) {
+            ->when($departementId, fn ($q) => $q->where(function ($q) use ($departementId) {
                 $q->where('departement_id', $departementId)
-                  ->orWhereHas('commune', fn($c) => $c->where('departement_id', $departementId))
-                  ->orWhereHas('localite.commune', fn($c) => $c->where('departement_id', $departementId))
-                  ->orWhereHas('infrastructure', fn($i) => $i
-                      ->where('departement_id', $departementId)
-                      ->orWhereHas('commune', fn($c) => $c->where('departement_id', $departementId)));
+                    ->orWhereHas('commune', fn ($c) => $c->where('departement_id', $departementId))
+                    ->orWhereHas('localite.commune', fn ($c) => $c->where('departement_id', $departementId))
+                    ->orWhereHas('infrastructure', fn ($i) => $i
+                        ->where('departement_id', $departementId)
+                        ->orWhereHas('commune', fn ($c) => $c->where('departement_id', $departementId)));
             }))
-            ->when($communeId, fn($q) => $q->where(function ($q) use ($communeId) {
+            ->when($communeId, fn ($q) => $q->where(function ($q) use ($communeId) {
                 $q->where('commune_id', $communeId)
-                  ->orWhereHas('localite', fn($l) => $l->where('commune_id', $communeId))
-                  ->orWhereHas('infrastructure', fn($i) => $i->where('commune_id', $communeId));
+                    ->orWhereHas('localite', fn ($l) => $l->where('commune_id', $communeId))
+                    ->orWhereHas('infrastructure', fn ($i) => $i->where('commune_id', $communeId));
             }))
-            ->when($localiteId, fn($query) => $query->where('localite_id', $localiteId))
-            ->when($infrastructureId, fn($query) => $query->where('infrastructure_id', $infrastructureId))
-            ->when($docType, fn($query) => $query->where('type_document', $docType))
-            ->when($q, fn($query) => $query->where('titre', 'like', "%{$q}%"))
+            ->when($localiteId, fn ($query) => $query->where('localite_id', $localiteId))
+            ->when($infrastructureId, fn ($query) => $query->where('infrastructure_id', $infrastructureId))
+            ->when($docType, fn ($query) => $query->where('type_document', $docType))
+            ->when($q, fn ($query) => $query->where('titre', 'like', "%{$q}%"))
             ->orderByDesc('created_at')
             ->paginate(10, ['*'], 'documents_page');
 
@@ -181,15 +181,15 @@ class DonneesController extends Controller
         //    prépare une carte id → liste de documents par type d'entité, afin que
         //    la vue n'exécute pas de requêtes. La découverte est "du bas vers le haut"
         //    hiérarchique : une région voit aussi les docs de ses départements, etc.
-        $constrDocs = fn($lignes, string $type) => $lignes->mapWithKeys(
-            fn($el) => [$el->id => $this->documentsTerritoire($type, $el->id)
-                ->map(fn($d) => ['titre' => $d->titre, 'type' => $d->type_document, 'lien' => $this->lienDocumentConsultation($d)])
+        $constrDocs = fn ($lignes, string $type) => $lignes->mapWithKeys(
+            fn ($el) => [$el->id => $this->documentsTerritoire($type, $el->id)
+                ->map(fn ($d) => ['titre' => $d->titre, 'type' => $d->type_document, 'lien' => $this->lienDocumentConsultation($d)])
                 ->values()->all()]
         );
-        $docsParRegion         = $constrDocs($regions, 'region');
-        $docsParDepartement    = $constrDocs($departements, 'departement');
-        $docsParCommune        = $constrDocs($communes, 'commune');
-        $docsParLocalite       = $constrDocs($localites, 'localite');
+        $docsParRegion = $constrDocs($regions, 'region');
+        $docsParDepartement = $constrDocs($departements, 'departement');
+        $docsParCommune = $constrDocs($communes, 'commune');
+        $docsParLocalite = $constrDocs($localites, 'localite');
         $docsParInfrastructure = $constrDocs($infrastructures, 'infrastructure');
 
         $connecte = Auth::user();
@@ -218,7 +218,7 @@ class DonneesController extends Controller
      *   - une localité voit les siens et ceux des infrastructures qui la couvrent ;
      *   - une infrastructure voit uniquement les docs qui lui sont liés.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\Document>
+     * @return Collection<int, Document>
      */
     private function documentsTerritoire(string $type, int $id)
     {
@@ -276,16 +276,16 @@ class DonneesController extends Controller
     private function enregistrerPhotos(Infrastructure $infrastructure, array $fichiers): void
     {
         foreach ($fichiers as $fichier) {
-            if (! $fichier instanceof \Illuminate\Http\UploadedFile) {
+            if (! $fichier instanceof UploadedFile) {
                 continue;
             }
             $chemin = $fichier->store(date('Y'), 'photos');
 
             Photo::create([
                 'infrastructure_id' => $infrastructure->id,
-                'nom'               => $fichier->getClientOriginalName(),
-                'chemin_photo'      => $chemin,
-                'description'       => null,
+                'nom' => $fichier->getClientOriginalName(),
+                'chemin_photo' => $chemin,
+                'description' => null,
             ]);
         }
     }
@@ -296,18 +296,22 @@ class DonneesController extends Controller
      */
     public function apercuPhoto(Photo $photo)
     {
-        $disque  = Storage::disk('photos');
-        $chemin  = $this->resoudreCheminPhoto($photo->chemin_photo);
+        $disque = Storage::disk('photos');
+        $chemin = $this->resoudreCheminPhoto($photo->chemin_photo);
         abort_unless($disque->exists($chemin), 404, 'Photo introuvable.');
 
         $flux = $disque->readStream($chemin);
+
+        if (! is_resource($flux)) {
+            abort(500, 'Lecture de la photo impossible.');
+        }
 
         return response()->stream(function () use ($flux): void {
             fpassthru($flux);
             fclose($flux);
         }, 200, [
-            'Content-Type'        => $this->mimeParExtension($chemin),
-            'Content-Disposition' => 'inline; filename="' . addslashes($photo->nom) . '"',
+            'Content-Type' => $this->mimeParExtension($chemin),
+            'Content-Disposition' => 'inline; filename="'.addslashes($photo->nom).'"',
         ]);
     }
 
@@ -319,10 +323,10 @@ class DonneesController extends Controller
     {
         return match (strtolower(pathinfo($chemin, PATHINFO_EXTENSION))) {
             'jpg', 'jpeg' => 'image/jpeg',
-            'png'         => 'image/png',
-            'gif'         => 'image/gif',
-            'webp'        => 'image/webp',
-            default       => 'application/octet-stream',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            default => 'application/octet-stream',
         };
     }
 
@@ -347,8 +351,8 @@ class DonneesController extends Controller
     public function storeRegion(Request $request)
     {
         $validated = $request->validate([
-            'nom'                => 'required|string|max:255|unique:regions,nom',
-            'nbre_infrastructure'=> 'nullable|integer|min:0',
+            'nom' => 'required|string|max:255|unique:regions,nom',
+            'nbre_infrastructure' => 'nullable|integer|min:0',
         ] + $this->reglesStats());
 
         Region::create($validated);
@@ -363,8 +367,8 @@ class DonneesController extends Controller
     public function storeDepartement(Request $request)
     {
         $validated = $request->validate([
-            'nom'               => 'required|string|max:255',
-            'region_id'         => 'required|exists:regions,id',
+            'nom' => 'required|string|max:255',
+            'region_id' => 'required|exists:regions,id',
         ] + $this->reglesStats());
 
         Departement::create($validated);
@@ -379,8 +383,8 @@ class DonneesController extends Controller
     public function storeCommune(Request $request)
     {
         $validated = $request->validate([
-            'nom'               => 'required|string|max:255',
-            'departement_id'    => 'required|exists:departements,id',
+            'nom' => 'required|string|max:255',
+            'departement_id' => 'required|exists:departements,id',
         ] + $this->reglesStats());
 
         Commune::create($validated);
@@ -395,10 +399,10 @@ class DonneesController extends Controller
     public function storeLocalite(Request $request)
     {
         $validated = $request->validate([
-            'nom'               => 'required|string|max:255',
+            'nom' => 'required|string|max:255',
             // seule la commune est enregistrée ; les champs region_filtre /
             // departement_filtre servent d'aide à la recherche côté client.
-            'commune_id'        => [
+            'commune_id' => [
                 'required',
                 'exists:communes,id',
                 // Cohérence : on accepte le couple (region_filtre, departement_filtre)
@@ -434,10 +438,10 @@ class DonneesController extends Controller
             'nom' => 'required|string|max:255|unique:secteurs,nom',
             // Tableau d'indicateurs à créer en même temps que le secteur.
             // Format attendu : indicateurs[0][nom_indicateur], [unites], [description]...
-            'indicateurs'              => 'nullable|array',
+            'indicateurs' => 'nullable|array',
             'indicateurs.*.nom_indicateur' => 'required_with:indicateurs|string|max:255',
-            'indicateurs.*.unites'         => 'nullable|string|max:255',
-            'indicateurs.*.description'    => 'nullable|string',
+            'indicateurs.*.unites' => 'nullable|string|max:255',
+            'indicateurs.*.description' => 'nullable|string',
         ]);
 
         // Création atomique : le secteur et ses indicateurs dans une seule transaction
@@ -451,8 +455,8 @@ class DonneesController extends Controller
                 }
                 $secteur->indicateurs()->create([
                     'nom_indicateur' => trim($indicateur['nom_indicateur']),
-                    'unites'         => trim($indicateur['unites'] ?? '') ?: null,
-                    'description'    => trim($indicateur['description'] ?? '') ?: null,
+                    'unites' => trim($indicateur['unites'] ?? '') ?: null,
+                    'description' => trim($indicateur['description'] ?? '') ?: null,
                 ]);
             }
         });
@@ -489,7 +493,7 @@ class DonneesController extends Controller
     public function updateDepartement(Request $request, Departement $departement)
     {
         $validated = $request->validate([
-            'nom'       => ['required', 'string', 'max:255'],
+            'nom' => ['required', 'string', 'max:255'],
             'region_id' => ['required', 'exists:regions,id'],
         ] + $this->reglesStats());
 
@@ -505,7 +509,7 @@ class DonneesController extends Controller
     public function updateCommune(Request $request, Commune $commune)
     {
         $validated = $request->validate([
-            'nom'            => ['required', 'string', 'max:255'],
+            'nom' => ['required', 'string', 'max:255'],
             'departement_id' => ['required', 'exists:departements,id'],
         ] + $this->reglesStats());
 
@@ -521,7 +525,7 @@ class DonneesController extends Controller
     public function updateLocalite(Request $request, Localite $localite)
     {
         $validated = $request->validate([
-            'nom'        => ['required', 'string', 'max:255'],
+            'nom' => ['required', 'string', 'max:255'],
             'commune_id' => ['required', 'exists:communes,id'],
         ] + $this->reglesStats());
 
@@ -540,21 +544,21 @@ class DonneesController extends Controller
         $validated = $request->validate([
             'nom' => ['required', 'string', 'max:255', Rule::unique('secteurs', 'nom')->ignore($secteur->id)],
             // Indicateurs existants : tableau indexé par leur id
-            'indicateurs'                    => 'nullable|array',
-            'indicateurs.*.nom_indicateur'   => 'required_with:indicateurs|string|max:255',
-            'indicateurs.*.unites'           => 'nullable|string|max:255',
-            'indicateurs.*.description'      => 'nullable|string',
+            'indicateurs' => 'nullable|array',
+            'indicateurs.*.nom_indicateur' => 'required_with:indicateurs|string|max:255',
+            'indicateurs.*.unites' => 'nullable|string|max:255',
+            'indicateurs.*.description' => 'nullable|string',
             // Ids des indicateurs existants à supprimer
-            'indicateurs_supprimer'          => 'nullable|array',
-            'indicateurs_supprimer.*'        => 'integer|exists:indicateurs,id',
+            'indicateurs_supprimer' => 'nullable|array',
+            'indicateurs_supprimer.*' => 'integer|exists:indicateurs,id',
             // Nouveaux indicateurs à ajouter
-            'indicateurs_nouveaux'           => 'nullable|array',
+            'indicateurs_nouveaux' => 'nullable|array',
             'indicateurs_nouveaux.*.nom_indicateur' => 'required_with:indicateurs_nouveaux|string|max:255',
-            'indicateurs_nouveaux.*.unites'  => 'nullable|string|max:255',
+            'indicateurs_nouveaux.*.unites' => 'nullable|string|max:255',
             'indicateurs_nouveaux.*.description' => 'nullable|string',
         ]);
 
-        DB::transaction(function () use ($request, $secteur, $validated) {
+        DB::transaction(function () use ($secteur, $validated) {
             $secteur->update(collect($validated)->except([
                 'indicateurs', 'indicateurs_supprimer', 'indicateurs_nouveaux',
             ])->all());
@@ -565,8 +569,8 @@ class DonneesController extends Controller
                 if ($indicateur = $secteur->indicateurs()->find($id)) {
                     $indicateur->update([
                         'nom_indicateur' => trim($donnees['nom_indicateur']),
-                        'unites'         => trim($donnees['unites'] ?? '') ?: null,
-                        'description'    => trim($donnees['description'] ?? '') ?: null,
+                        'unites' => trim($donnees['unites'] ?? '') ?: null,
+                        'description' => trim($donnees['description'] ?? '') ?: null,
                     ]);
                 }
             }
@@ -574,7 +578,7 @@ class DonneesController extends Controller
             // 2) Suppression des indicateurs demandés (les liaisons vers les
             //    infrastructures sont retirées par cascade sur la pivot)
             $idsASupprimer = $validated['indicateurs_supprimer'] ?? [];
-            if (!empty($idsASupprimer)) {
+            if (! empty($idsASupprimer)) {
                 $secteur->indicateurs()->whereIn('id', $idsASupprimer)->delete();
             }
 
@@ -585,8 +589,8 @@ class DonneesController extends Controller
                 }
                 $secteur->indicateurs()->create([
                     'nom_indicateur' => trim($nouveau['nom_indicateur']),
-                    'unites'         => trim($nouveau['unites'] ?? '') ?: null,
-                    'description'    => trim($nouveau['description'] ?? '') ?: null,
+                    'unites' => trim($nouveau['unites'] ?? '') ?: null,
+                    'description' => trim($nouveau['description'] ?? '') ?: null,
                 ]);
             }
         });
@@ -608,6 +612,7 @@ class DonneesController extends Controller
     {
         try {
             $region->delete();
+
             return redirect()->route('DonneesAdmi', ['tab' => 'regions'])
                 ->with('success', 'Région supprimée avec succès !');
         } catch (QueryException $e) {
@@ -623,6 +628,7 @@ class DonneesController extends Controller
     {
         try {
             $departement->delete();
+
             return redirect()->route('DonneesAdmi', ['tab' => 'departements'])
                 ->with('success', 'Département supprimé avec succès !');
         } catch (QueryException $e) {
@@ -638,6 +644,7 @@ class DonneesController extends Controller
     {
         try {
             $commune->delete();
+
             return redirect()->route('DonneesAdmi', ['tab' => 'communes'])
                 ->with('success', 'Commune supprimée avec succès !');
         } catch (QueryException $e) {
@@ -653,6 +660,7 @@ class DonneesController extends Controller
     {
         try {
             $localite->delete();
+
             return redirect()->route('DonneesAdmi', ['tab' => 'localites'])
                 ->with('success', 'Localité supprimée avec succès !');
         } catch (QueryException $e) {
@@ -674,11 +682,11 @@ class DonneesController extends Controller
 
         $lignes = $secteur->indicateurs->map(function (Indicateur $ind) {
             return [
-                'id'                => $ind->id,
-                'nom'               => $ind->nom_indicateur,
-                'unites'            => $ind->unites ?? '',
-                'somme'             => 0.0,
-                'nbMesures'         => 0,
+                'id' => $ind->id,
+                'nom' => $ind->nom_indicateur,
+                'unites' => $ind->unites ?? '',
+                'somme' => 0.0,
+                'nbMesures' => 0,
                 'parInfrastructure' => [],
             ];
         })->keyBy('id')->all();
@@ -693,10 +701,10 @@ class DonneesController extends Controller
                     if ($ind->pivot->valeur === null) {
                         continue;
                     }
-                    $lignes[$ind->id]['somme']       += (float) $ind->pivot->valeur;
+                    $lignes[$ind->id]['somme'] += (float) $ind->pivot->valeur;
                     $lignes[$ind->id]['nbMesures']++;
                     $lignes[$ind->id]['parInfrastructure'][] = [
-                        'nom'    => $infra->nom,
+                        'nom' => $infra->nom,
                         'valeur' => (float) $ind->pivot->valeur,
                     ];
                 }
@@ -704,7 +712,7 @@ class DonneesController extends Controller
         }
 
         return response()->json([
-            'nom'         => $secteur->nom,
+            'nom' => $secteur->nom,
             'indicateurs' => array_values($lignes),
         ]);
     }
@@ -716,6 +724,7 @@ class DonneesController extends Controller
     {
         try {
             $secteur->delete();
+
             return redirect()->route('DonneesAdmi', ['tab' => 'secteurs'])
                 ->with('success', 'Secteur supprimé avec succès !');
         } catch (QueryException $e) {
@@ -748,7 +757,7 @@ class DonneesController extends Controller
         }
 
         // 1. Les localités couvertes exigent une commune de rattachement
-        if (!empty($validated['localites']) && empty($validated['commune_id'])) {
+        if (! empty($validated['localites']) && empty($validated['commune_id'])) {
             return back()
                 ->withErrors(['localites' => 'Les localités couvertes nécessitent de choisir une commune.'])
                 ->withInput();
@@ -756,7 +765,7 @@ class DonneesController extends Controller
 
         // 2. Toutes les localités choisies doivent appartenir à la commune choisie
         //    (le JS filtre déjà la liste, mais on ne fait jamais confiance au client)
-        if (!empty($validated['localites'])) {
+        if (! empty($validated['localites'])) {
             $nbInvalides = Localite::whereIn('id', $validated['localites'])
                 ->where('commune_id', '!=', $validated['commune_id'])
                 ->count();
@@ -811,12 +820,12 @@ class DonneesController extends Controller
         if ($verif !== null) {
             return back()->withErrors($verif)->withInput();
         }
-        if (!empty($validated['localites']) && empty($validated['commune_id'])) {
+        if (! empty($validated['localites']) && empty($validated['commune_id'])) {
             return back()
                 ->withErrors(['localites' => 'Les localités couvertes nécessitent de choisir une commune.'])
                 ->withInput();
         }
-        if (!empty($validated['localites'])) {
+        if (! empty($validated['localites'])) {
             $nbInvalides = Localite::whereIn('id', $validated['localites'])
                 ->where('commune_id', '!=', $validated['commune_id'])
                 ->count();
@@ -830,7 +839,7 @@ class DonneesController extends Controller
         // Budget photos : total = photos conservées + nouvelles, plafonné à 10.
         $photosASupprimer = $request->input('photos_supprimer', []);
         $photosConservees = $infrastructure->photos->count() - count($photosASupprimer);
-        $photosAjoutees   = count(array_filter($request->file('photos', []), fn ($f) => $f instanceof \Illuminate\Http\UploadedFile));
+        $photosAjoutees = count(array_filter($request->file('photos', []), fn ($f) => $f instanceof UploadedFile));
         if ($photosConservees + $photosAjoutees > 10) {
             return back()
                 ->withErrors(['photos' => 'Le total de photos ne peut pas dépasser 10 par infrastructure.'])
@@ -894,6 +903,7 @@ class DonneesController extends Controller
             }
 
             $infrastructure->delete();
+
             return redirect()->route('DonneesAdmi', ['tab' => 'infrastructures'])
                 ->with('success', 'Infrastructure supprimée avec succès !');
         } catch (QueryException $e) {
@@ -917,13 +927,13 @@ class DonneesController extends Controller
     {
         // Carte des types autorisés -> classe de modèle associée
         $modeles = [
-            'region'         => Region::class,
-            'departement'    => Departement::class,
-            'commune'        => Commune::class,
-            'localite'       => Localite::class,
-            'secteur'        => Secteur::class,
+            'region' => Region::class,
+            'departement' => Departement::class,
+            'commune' => Commune::class,
+            'localite' => Localite::class,
+            'secteur' => Secteur::class,
             'infrastructure' => Infrastructure::class,
-            'document'       => Document::class,
+            'document' => Document::class,
         ];
 
         // Type inconnu ou élément introuvable : réponse 404 JSON
@@ -937,19 +947,19 @@ class DonneesController extends Controller
 
         // Chaque helper renvoie [titre, éléments, bloqué?, message?]
         [$titre, $elements, $bloque, $message] = match ($type) {
-            'region'         => $this->impactRegion($modele),
-            'departement'    => $this->impactDepartement($modele),
-            'commune'        => $this->impactCommune($modele),
-            'localite'       => $this->impactLocalite($modele),
-            'secteur'        => $this->impactSecteur($modele),
+            'region' => $this->impactRegion($modele),
+            'departement' => $this->impactDepartement($modele),
+            'commune' => $this->impactCommune($modele),
+            'localite' => $this->impactLocalite($modele),
+            'secteur' => $this->impactSecteur($modele),
             'infrastructure' => $this->impactInfrastructure($modele),
-            'document'       => $this->impactDocument($modele),
+            'document' => $this->impactDocument($modele),
         };
 
         return response()->json([
-            'titre'    => $titre,
-            'bloque'   => $bloque,
-            'message'  => $message,
+            'titre' => $titre,
+            'bloque' => $bloque,
+            'message' => $message,
             'elements' => $elements,
         ]);
     }
@@ -962,11 +972,11 @@ class DonneesController extends Controller
     {
         // On descend l'arbre : départements, puis leurs communes, puis leurs localités
         $departements = Departement::where('region_id', $region->id)->get();
-        $idsDepts     = $departements->pluck('id');
-        $communes     = Commune::whereIn('departement_id', $idsDepts)->get();
-        $idsComs      = $communes->pluck('id');
-        $localites    = Localite::whereIn('commune_id', $idsComs)->get();
-        $idsLocs      = $localites->pluck('id');
+        $idsDepts = $departements->pluck('id');
+        $communes = Commune::whereIn('departement_id', $idsDepts)->get();
+        $idsComs = $communes->pluck('id');
+        $localites = Localite::whereIn('commune_id', $idsComs)->get();
+        $idsLocs = $localites->pluck('id');
 
         // Grâce à la contrainte CHECK, une infrastructure est liée soit au
         // département soit à la commune : additionner les deux ne compte rien en double.
@@ -999,10 +1009,10 @@ class DonneesController extends Controller
     /** Département : cascade sur communes -> localités + infrastructures du département. */
     private function impactDepartement(Departement $departement): array
     {
-        $communes  = Commune::where('departement_id', $departement->id)->get();
-        $idsComs   = $communes->pluck('id');
+        $communes = Commune::where('departement_id', $departement->id)->get();
+        $idsComs = $communes->pluck('id');
         $localites = Localite::whereIn('commune_id', $idsComs)->get();
-        $idsLocs   = $localites->pluck('id');
+        $idsLocs = $localites->pluck('id');
 
         // Infrastructures liées au département OU aux communes de l'arbre (exclusives via CHECK)
         $nbInfra = Infrastructure::where('departement_id', $departement->id)->count()
@@ -1031,7 +1041,7 @@ class DonneesController extends Controller
     private function impactCommune(Commune $commune): array
     {
         $localites = Localite::where('commune_id', $commune->id)->get();
-        $idsLocs   = $localites->pluck('id');
+        $idsLocs = $localites->pluck('id');
 
         // Seules les infrastructures liées À LA COMMUNE disparaissent ;
         // celles rattachées par département restent intactes.
@@ -1066,7 +1076,7 @@ class DonneesController extends Controller
         $nbLiaisons = DB::table('localite_couverts')->where('localite_id', $localite->id)->count();
 
         $nbActus = Actualite::where('localite_id', $localite->id)->count();
-        $nbDocs  = Document::where('localite_id', $localite->id)->count();
+        $nbDocs = Document::where('localite_id', $localite->id)->count();
 
         return [
             "Supprimer définitivement la localité « {$localite->nom} » ?",
@@ -1087,7 +1097,7 @@ class DonneesController extends Controller
      */
     private function impactSecteur(Secteur $secteur): array
     {
-        $infras  = Infrastructure::where('secteur_id', $secteur->id)->get();
+        $infras = Infrastructure::where('secteur_id', $secteur->id)->get();
         $nbIndic = Indicateur::where('secteur_id', $secteur->id)->count();
 
         // Cas bloqué : des infrastructures dépendent encore de ce secteur
@@ -1151,11 +1161,11 @@ class DonneesController extends Controller
     private function ligneImpact(string $label, $collection): array
     {
         return [
-            'label'    => $label,
-            'nombre'   => $collection->count(),
+            'label' => $label,
+            'nombre' => $collection->count(),
             'exemples' => $collection->count() > 0
                 ? $collection->sortBy('nom')->take(5)->pluck('nom')->implode(', ')
-                  . ($collection->count() > 5 ? ', …' : '')
+                  .($collection->count() > 5 ? ', …' : '')
                 : '',
         ];
     }
@@ -1178,8 +1188,8 @@ class DonneesController extends Controller
     private function reglesStats(): array
     {
         return [
-            'superficie'         => 'nullable|numeric|min:0',
-            'taille_population'  => [
+            'superficie' => 'nullable|numeric|min:0',
+            'taille_population' => [
                 'nullable', 'integer', 'min:0',
                 // RÈGLE MÉTIER : la somme hommes + femmes ne doit pas dépasser
                 // la population totale. Vérifiée uniquement si les 3 champs
@@ -1190,29 +1200,29 @@ class DonneesController extends Controller
                     // On ne contrôle que si hommes ET femmes sont aussi renseignés
                     if (request()->filled('nbre_homme') && request()->filled('nbre_femme') && $value !== null) {
                         if ($hommes + $femmes > (int) $value) {
-                            $fail("La somme des hommes et des femmes ({$hommes} + {$femmes} = " . ($hommes + $femmes) . ") ne peut pas dépasser la population totale ({$value}).");
+                            $fail("La somme des hommes et des femmes ({$hommes} + {$femmes} = ".($hommes + $femmes).") ne peut pas dépasser la population totale ({$value}).");
                         }
                     }
                 },
             ],
-            'nbre_menage'        => 'nullable|integer|min:0',
-            'nbre_homme'         => 'nullable|integer|min:0',
-            'nbre_femme'         => 'nullable|integer|min:0',
-            'latitude'           => 'nullable|numeric',
-            'longitude'          => 'nullable|numeric',
+            'nbre_menage' => 'nullable|integer|min:0',
+            'nbre_homme' => 'nullable|integer|min:0',
+            'nbre_femme' => 'nullable|integer|min:0',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
         ];
     }
 
     /**
      * Règles de validation d'une infrastructure (création ET modification).
      *
-     * @param Request $request   Requête en cours (pour prohibitedIf)
-     * @param int|null $idIgnore Id à ignorer pour l'unicité du nom (cas modification)
+     * @param  Request  $request  Requête en cours (pour prohibitedIf)
+     * @param  int|null  $idIgnore  Id à ignorer pour l'unicité du nom (cas modification)
      */
     private function reglesInfrastructure(Request $request, ?int $idIgnore = null): array
     {
         return [
-            'nom'                  => [
+            'nom' => [
                 'required', 'string', 'max:255',
                 // Nom unique au sein du MÊME territoire (commune OU département) ;
                 // deux infrastructures homonymes dans des territoires différents restent autorisées.
@@ -1222,8 +1232,8 @@ class DonneesController extends Controller
                         ->when($request->filled('departement_id'), fn ($qq) => $qq->where('departement_id', $request->departement_id)))
                     ->ignore($idIgnore),
             ],
-            'description'          => 'nullable|string',
-            'type_infrastructure'  => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'type_infrastructure' => 'nullable|string|max:255',
 
             // ═══ Rattachement territorial : UN SEUL mode, jamais deux. ═══
             // Règle (cascade avec arrêt) : on s'arrête au niveau le plus profond.
@@ -1235,7 +1245,7 @@ class DonneesController extends Controller
             'departement_id' => [
                 'nullable',
                 'exists:departements,id',
-                Rule::prohibitedIf(fn () => $request->filled('commune_id') || !empty($request->input('localites'))),
+                Rule::prohibitedIf(fn () => $request->filled('commune_id') || ! empty($request->input('localites'))),
             ],
             'commune_id' => [
                 'nullable',
@@ -1243,41 +1253,41 @@ class DonneesController extends Controller
                 Rule::prohibitedIf(fn () => $request->filled('departement_id')),
             ],
 
-            'secteur_id'           => 'required|exists:secteurs,id',
-            'date_creation'        => 'nullable|date',
+            'secteur_id' => 'required|exists:secteurs,id',
+            'date_creation' => 'nullable|date',
             // État du lieu : valeurs de l'énumération définie dans la table
-            'etat_lieu'            => ['nullable', Rule::in(['Bon', 'Moyen', 'Mauvais', 'Hors_service'])],
-            'latitude'             => 'nullable|numeric',
-            'longitude'            => 'nullable|numeric',
+            'etat_lieu' => ['nullable', Rule::in(['Bon', 'Moyen', 'Mauvais', 'Hors_service'])],
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
 
             // Localités couvertes : tableau d'IDs (multi-select), sans doublons.
             // Interdit si rattachement département -> seul le mode commune+localités l'utilise.
-            'localites'            => [
+            'localites' => [
                 'nullable',
                 'array',
                 Rule::prohibitedIf(fn () => $request->filled('departement_id')),
             ],
-            'localites.*'          => 'integer|distinct|exists:localites,id',
+            'localites.*' => 'integer|distinct|exists:localites,id',
 
             // Population couverte personnalisée (optionnelle).
             // Si renseignée, elle remplace la somme automatique et est répartie
             // proportionnellement entre les localités sélectionnées.
-            'population_couverte'  => 'nullable|integer|min:0',
+            'population_couverte' => 'nullable|integer|min:0',
 
             // Valeurs des indicateurs de ce secteur : tableau "indicateur_id => valeur".
             // Les valeurs manquantes restent null dans la pivot.
-            'indicateurs_valeurs'      => 'nullable|array',
-            'indicateurs_valeurs.*'    => 'nullable|numeric|min:0',
+            'indicateurs_valeurs' => 'nullable|array',
+            'indicateurs_valeurs.*' => 'nullable|numeric|min:0',
 
             // Photos de l'infrastructure : images JPG/PNG/GIF/WebP,
             // 5 Mo max chacune, 10 maximum par infrastructure.
-            'photos'   => 'nullable|array|max:10',
+            'photos' => 'nullable|array|max:10',
             'photos.*' => ['image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
 
             // Photos à retirer lors de la modification (cases cochées sur les
             // vignettes existantes). L'appartenance à l'infrastructure est
             // re-vérifiée dans updateInfrastructure.
-            'photos_supprimer'   => 'nullable|array',
+            'photos_supprimer' => 'nullable|array',
             'photos_supprimer.*' => 'integer',
         ];
     }
@@ -1290,14 +1300,13 @@ class DonneesController extends Controller
      * moins un mode de rattachement (département, commune, ou localités) est
      * renseigné.
      *
-     * @param array $validated Données validées de la requête
-     * @return array|null
+     * @param  array  $validated  Données validées de la requête
      */
     private function verifierRattachement(array $validated): ?array
     {
-        $aDepartement = !empty($validated['departement_id']);
-        $aCommune     = !empty($validated['commune_id']);
-        $aLocalites   = !empty($validated['localites']);
+        $aDepartement = ! empty($validated['departement_id']);
+        $aCommune = ! empty($validated['commune_id']);
+        $aLocalites = ! empty($validated['localites']);
 
         // Aucun choix de rattachement -> erreur
         if (! $aDepartement && ! $aCommune && ! $aLocalites) {
@@ -1316,15 +1325,15 @@ class DonneesController extends Controller
      * Si $populationCouverte est fournie, cette valeur cible est répartie
      * proportionnellement entre les localités sélectionnées.
      *
-     * @param Infrastructure $infrastructure
-     * @param array          $localiteIds        IDs des localités couvertes
-     * @param int|null       $populationCouverte Population totale souhaitée (optionnel)
+     * @param  array  $localiteIds  IDs des localités couvertes
+     * @param  int|null  $populationCouverte  Population totale souhaitée (optionnel)
      */
     private function synchroniserLocalitesCouvertes(Infrastructure $infrastructure, array $localiteIds, ?int $populationCouverte): void
     {
         // Aucune localité cochée → on vide la couverture (sync([]) retire tout)
         if (empty($localiteIds)) {
             $infrastructure->localitesCouvertes()->sync([]);
+
             return;
         }
 
@@ -1363,8 +1372,7 @@ class DonneesController extends Controller
      * rester cohérents avec la liste des indicateurs du secteur ; seule une
      * valeur strictement vide ('' ou null) est stockée en tant que null.
      *
-     * @param Infrastructure $infrastructure
-     * @param array          $valeurs        Tableau "indicateur_id => valeur"
+     * @param  array  $valeurs  Tableau "indicateur_id => valeur"
      */
     private function synchroniserValeursIndicateurs(Infrastructure $infrastructure, array $valeurs): void
     {

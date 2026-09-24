@@ -65,7 +65,7 @@
         <div class="apropos-ard-hd-texte">
           <span class="apropos-ard-kicker"><i class="fa-solid fa-building-columns"></i> Partenaire officiel du territoire</span>
           <h2 class="apropos-ard-titre">Agence Régionale de Développement de <span class="apropos-ard-accent">Kaolack</span></h2>
-          <p class="apropos-ard-phrase">« Ensemble pour un développement local durable et une région ouverte sur le monde. »</p>
+          <p class="apropos-ard-phrase">« Ensemble pour un développement territorial durable et une région ouverte sur le monde. »</p>
         </div>
         <div class="apropos-ard-chiffres">
           <div class="apropos-ard-chiffre"><strong>3</strong><span>Départements</span></div>
