@@ -17,24 +17,46 @@ class CommentaireController extends Controller
     public function envoyer(Request $request)
     {
         $validated = $request->validate([
-            'nom'     => 'nullable|string|max:255',
-            'email'   => 'required|email|max:255',
-            'type'    => 'required|in:commentaire,plainte',
+            'nom' => 'nullable|string|max:255',
+            'email' => ['required', 'string', 'max:255', function ($attribute, $value, $fail) {
+                $v = trim((string) $value);
+                $isEmail = filter_var($v, FILTER_VALIDATE_EMAIL) !== false;
+                $digits  = preg_replace('/[\s.\-()]/', '', $v);
+                $digits  = preg_replace('/^(?:\+221|00221)/', '', $digits);
+                $isPhone = preg_match('/^[37][0-9]{8}$/', $digits) === 1;
+                if (! $isEmail && ! $isPhone) {
+                    $fail('Saisissez un e-mail valide ou un n° de téléphone sénégalais (ex : 77 123 45 67).');
+                }
+            }],
+            'type' => 'required|in:commentaire,plainte',
             'message' => 'required|string|max:5000',
+            'commune' => 'nullable|string|max:255',
+            'projet' => 'nullable|string|max:255',
         ]);
 
+        $projet = $request->input('projet');
+        if ($projet === 'autre') {
+            $projet = trim((string) $request->input('projet_autre'));
+        }
+        $projet = $projet !== '' ? $projet : null;
+
+        $commune = $request->input('commune');
+        $commune = $commune !== '' ? $commune : null;
+
         Commentaire::create([
-            'nom'          => $validated['nom'] ?? null,
-            'email'        => $validated['email'],
-            'type'         => $validated['type'],
-            'message'      => $validated['message'],
-            'statut'       => 'en_attente',
+            'nom' => $validated['nom'] ?? null,
+            'email' => $validated['email'],
+            'type' => $validated['type'],
+            'message' => $validated['message'],
+            'commune' => $commune,
+            'projet' => $projet,
+            'statut' => 'en_attente',
             'actualite_id' => null,
         ]);
 
         if ($request->expectsJson()) {
             return response()->json([
-                'succes'  => true,
+                'succes' => true,
                 'message' => 'Votre message a bien été envoyé. Merci pour votre contribution !',
             ]);
         }
@@ -49,23 +71,23 @@ class CommentaireController extends Controller
     public function commenterActualite(Request $request, Actualite $actualite)
     {
         $validated = $request->validate([
-            'nom'     => 'nullable|string|max:255',
-            'email'   => 'required|email|max:255',
+            'nom' => 'nullable|string|max:255',
+            'email' => 'required|email|max:255',
             'message' => 'required|string|max:5000',
         ]);
 
         Commentaire::create([
-            'nom'          => $validated['nom'] ?? null,
-            'email'        => $validated['email'],
-            'type'         => 'commentaire',
-            'message'      => $validated['message'],
-            'statut'       => 'en_attente',
+            'nom' => $validated['nom'] ?? null,
+            'email' => $validated['email'],
+            'type' => 'commentaire',
+            'message' => $validated['message'],
+            'statut' => 'en_attente',
             'actualite_id' => $actualite->id,
         ]);
 
         if ($request->expectsJson()) {
             return response()->json([
-                'succes'  => true,
+                'succes' => true,
                 'message' => 'Votre commentaire a été ajouté. Il sera visible après modération.',
             ]);
         }
@@ -81,16 +103,20 @@ class CommentaireController extends Controller
         $type = $request->get('type');
         $statut = $request->get('statut');
         $mois = $request->get('mois');
+        $commune = $request->get('commune');
+        $projet = $request->get('projet');
 
         $commentaires = Commentaire::independant()
-            ->when($type, fn($q) => $q->where('type', $type))
-            ->when($statut, fn($q) => $q->where('statut', $statut))
+            ->when($type, fn ($q) => $q->where('type', $type))
+            ->when($statut, fn ($q) => $q->where('statut', $statut))
+            ->when($commune, fn ($q) => $q->where('commune', $commune))
+            ->when($projet, fn ($q) => $q->where('projet', $projet))
             ->when($mois, function ($q) use ($mois) {
                 // Filtre par mois : format attendu "YYYY-MM"
                 if (preg_match('/^\d{4}-\d{2}$/', $mois)) {
                     [$annee, $moisNum] = explode('-', $mois);
                     $q->whereYear('created_at', (int) $annee)
-                      ->whereMonth('created_at', (int) $moisNum);
+                        ->whereMonth('created_at', (int) $moisNum);
                 }
             })
             ->orderBy('created_at', 'desc')
@@ -100,7 +126,25 @@ class CommentaireController extends Controller
         $totalEnAttente = Commentaire::independant()
             ->where('statut', 'en_attente')->count();
 
-        return view('PageAdmi.CommentairesAdmi', compact('commentaires', 'type', 'statut', 'mois', 'totalEnAttente'));
+        // Listes pour les filtres : valeurs réellement présentes en base
+        $communesDispo = Commentaire::independant()
+            ->whereNotNull('commune')->where('commune', '!=', '')
+            ->distinct()->pluck('commune')->sort()->values();
+        $projetsDispo = Commentaire::independant()
+            ->whereNotNull('projet')->where('projet', '!=', '')
+            ->distinct()->pluck('projet')->sort()->values();
+
+        return view('PageAdmi.CommentairesAdmi', compact(
+            'commentaires',
+            'type',
+            'statut',
+            'mois',
+            'commune',
+            'projet',
+            'communesDispo',
+            'projetsDispo',
+            'totalEnAttente'
+        ));
     }
 
     /**
@@ -109,6 +153,7 @@ class CommentaireController extends Controller
     public function marquerLu(Commentaire $commentaire)
     {
         $commentaire->update(['statut' => 'lu']);
+
         return back()->with('succes', 'Commentaire marqué comme lu.');
     }
 
@@ -118,6 +163,7 @@ class CommentaireController extends Controller
     public function marquerTraite(Commentaire $commentaire)
     {
         $commentaire->update(['statut' => 'traite']);
+
         return back()->with('succes', 'Commentaire marqué comme traité.');
     }
 
@@ -127,6 +173,7 @@ class CommentaireController extends Controller
     public function destroy(Commentaire $commentaire)
     {
         $commentaire->delete();
+
         return back()->with('succes', 'Commentaire supprimé.');
     }
 
@@ -156,37 +203,37 @@ class CommentaireController extends Controller
         // Compteurs par type pour le récapitulatif
         $recap = [
             'commentaire' => $commentaires->where('type', 'commentaire')->count(),
-            'suggestion'  => $commentaires->where('type', 'suggestion')->count(),
-            'plainte'     => $commentaires->where('type', 'plainte')->count(),
+            'suggestion' => $commentaires->where('type', 'suggestion')->count(),
+            'plainte' => $commentaires->where('type', 'plainte')->count(),
         ];
 
         // Logo en-tête PDF : fichier déposé dans public/assets/img/
         // (le nom est configurable dans config/sama.php — ici en data URI pour
         //  que dompdf l'affiche sans dépendre de l'extension GD)
         $logoNom = config('sama.logo_pdf', 'ENTETE-PDF.jpg');
-        $logoChemin = public_path('assets/img/' . $logoNom);
+        $logoChemin = public_path('assets/img/'.$logoNom);
         $logoPdf = null;
         if (is_file($logoChemin)) {
             $mime = match (strtolower(pathinfo($logoNom, PATHINFO_EXTENSION))) {
                 'jpg', 'jpeg' => 'image/jpeg',
-                'png'         => 'image/png',
-                'gif'         => 'image/gif',
-                'webp'        => 'image/webp',
-                default       => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'webp' => 'image/webp',
+                default => 'image/jpeg',
             };
-            $logoPdf = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoChemin));
+            $logoPdf = 'data:'.$mime.';base64,'.base64_encode(file_get_contents($logoChemin));
         }
 
         $pdf = Pdf::loadView('pdf.commentaires', [
             'commentaires' => $commentaires,
             'destinataire' => $destinataire,
-            'date'         => now(),
-            'recap'        => $recap,
-            'logoPdf'      => $logoPdf,
-            'logoNom'      => $logoNom,
+            'date' => now(),
+            'recap' => $recap,
+            'logoPdf' => $logoPdf,
+            'logoNom' => $logoNom,
         ])->setPaper('a4', 'portrait');
 
-        $nomFichier = 'SAMA_TERRITOIRE_' . now()->format('Ymd_His') . '.pdf';
+        $nomFichier = 'SAMA_TERRITOIRE_'.now()->format('Ymd_His').'.pdf';
 
         return $pdf->download($nomFichier);
     }

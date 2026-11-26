@@ -155,7 +155,7 @@ class ChatbotController extends Controller
 
         $statutsTransitoires = [408, 429, 500, 502, 503, 504];
         $budgetSecondes = 35;
-        $tentatives = 3;
+        $essaisParCle = 2;
         $debut = microtime(true);
 
         foreach ($cles as $index => $cle) {
@@ -167,8 +167,7 @@ class ChatbotController extends Controller
                 continue;
             }
 
-            while ($tentatives > 0) {
-                $tentatives--;
+            for ($essai = 0; $essai < $essaisParCle; $essai++) {
                 $reste = $budgetSecondes - (microtime(true) - $debut);
 
                 if ($reste <= 0) {
@@ -186,10 +185,14 @@ class ChatbotController extends Controller
                     Log::error('Chatbot SAMA TERRITOIRE : exception lors de l\'appel au fournisseur.', [
                         'provider' => $provider,
                         'cle' => $numeroCle,
+                        'essai' => $essai + 1,
                         'erreur' => $e->getMessage(),
                     ]);
 
-                    continue;
+                    // Timeout réseau passager : petite pause puis clé suivante.
+                    usleep(300000);
+
+                    break;
                 }
 
                 if ($reponse->successful()) {
@@ -213,15 +216,18 @@ class ChatbotController extends Controller
                 Log::warning('Chatbot SAMA TERRITOIRE : réponse invalide du fournisseur.', [
                     'provider' => $provider,
                     'cle' => $numeroCle,
+                    'essai' => $essai + 1,
                     'status' => $statut,
                     'contenu' => $reponse->body(),
                 ]);
 
-                if (! in_array($statut, $statutsTransitoires, true) || $tentatives <= 0 || $reste <= 1) {
+                // Erreur transitoire (503 « high demand », dépassement de limite…) :
+                // on tente la clé suivante pour répartir la charge.
+                if (! in_array($statut, $statutsTransitoires, true) || $reste <= 1) {
                     break;
                 }
 
-                usleep(250000);
+                usleep(500000);
             }
         }
 
@@ -463,10 +469,15 @@ class ChatbotController extends Controller
      */
     protected function construireMessages(array $validated): array
     {
+        $rechercheWebActivee = config('services.search.key', '') !== '';
+        $regle1 = $rechercheWebActivee
+            ? 'RÈGLE 1 : si la question concerne le territoire de Kaolack ou les données de la plateforme, réponds UNIQUEMENT à partir du « CONTEXTE PLATEFORME » fourni ci-dessous. Si l\'information n\'y figure pas, utilise la fonction recherche_web pour chercher des informations à jour avant d\'avouer ton ignorance.'
+            : 'RÈGLE 1 : si la question concerne le territoire de Kaolack ou les données de la plateforme, réponds UNIQUEMENT à partir du « CONTEXTE PLATEFORME » fourni ci-dessous. Si l\'information n\'y figure pas, réponds honnêtement que cette information n\'est pas disponible sur la plateforme actuellement.';
+
         $system = [
             "Tu es l'assistant officiel de SAMA TERRITOIRE, la plateforme de données territoriales de la région de Kaolack (Sénégal).",
             'Réponds toujours en français, de façon claire, courtoise et concise (2 à 6 phrases, des puces si utile).',
-            'RÈGLE 1 : si la question concerne le territoire de Kaolack ou les données de la plateforme, réponds UNIQUEMENT à partir du « CONTEXTE PLATEFORME » fourni ci-dessous. Si l\'information n\'y figure pas, utilise la fonction recherche_web pour chercher des informations à jour avant d\'avouer ton ignorance.',
+            $regle1,
             'RÈGLE 2 : pour toute autre question (organisation administrative du Sénégal, communes, départements, localités, décrets, textes juridiques, actualités nationales, etc.), tu peux répondre avec tes connaissances générales, en précisant que ce sont des informations générales à vérifier auprès des sources officielles.',
             'RÈGLE 3 : ne jamais inventer de chiffres issus de la plateforme ni de coordonnées. Si une donnée manque, le dire ou chercher sur le web.',
             '',

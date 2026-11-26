@@ -13,6 +13,7 @@
     <button class="nav-btn " data-href="{{ url('cartographie') }}"><i class="fa-solid fa-map"></i> Cartographie</button>
     <button class="nav-btn " data-href="{{ url('statistique') }}"><i class="fa-solid fa-chart-bar"></i> Statistiques</button>
     <button class="nav-btn" data-href="{{ url('climat') }}"><i class="fa-solid fa-temperature-high"></i> Changements Climatiques</button>
+    <button class="nav-btn" data-href="{{ url('/#commentaires-plaintes') }}"><i class="fa-solid fa-comments"></i> MGP</button>
     <button class="nav-btn " data-href="{{ url('apropos') }}"><i class="fa-solid fa-circle-info"></i> À propos</button>
   </nav>
 
@@ -21,7 +22,21 @@
       document.querySelectorAll('nav .nav-btn').forEach(btn=>{
         btn.addEventListener('click', ()=>{
           const href = btn.getAttribute('data-href');
-          if(href) window.location.href = href;
+          if(!href) return;
+
+          // Lien ancre : si la page est déjà chargée, scroller en douceur sans rechargement
+          const m = href.match(/^([^#]*)#(.+)$/);
+          if (m) {
+            const path = m[1] || window.location.pathname;
+            if (window.location.pathname === path && document.getElementById(m[2])) {
+              const el = document.getElementById(m[2]);
+              const y = el.getBoundingClientRect().top + window.scrollY - 80;
+              window.scrollTo({ top: y, behavior: 'smooth' });
+              return;
+            }
+          }
+
+          window.location.href = href;
         });
       });
 

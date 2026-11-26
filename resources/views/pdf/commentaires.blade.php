@@ -105,6 +105,7 @@
                 {{-- <th style="width:70px;">Statut</th> --}}
                 <th>Message</th>
                 <th style="width:70px;">Date</th>
+                <th>Commune / Projet</th>
             </tr>
         </thead>
         <tbody>
@@ -133,6 +134,13 @@
                 </td> --}}
                 <td class="msg">{{ $c->message }}</td>
                 <td>{{ $c->created_at->format('d/m/Y') }}<br><span style="color:#8aaa95; font-size:9px;">{{ $c->created_at->format('H:i') }}</span></td>
+                <td>
+                    @if($c->commune)<span style="color:#2e7fbb;">{{ $c->commune }}</span>@endif
+                    @if($c->projet)
+                        @if($c->commune)<br>@endif{{ $c->projet }}
+                    @endif
+                    @if(!$c->commune && !$c->projet)<span style="color:#8aaa95;">—</span>@endif
+                </td>
             </tr>
             @empty
             <tr><td colspan="6" class="empty">Aucun commentaire sélectionné.</td></tr>

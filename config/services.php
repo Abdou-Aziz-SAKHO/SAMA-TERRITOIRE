@@ -41,7 +41,7 @@ return [
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
         'timeout' => (int) env('OPENAI_TIMEOUT', 30),
         'temperature' => (float) env('OPENAI_TEMPERATURE', 0.5),
-        'max_tokens' => (int) env('OPENAI_MAX_TOKENS', 600),
+        'max_tokens' => (int) env('OPENAI_MAX_TOKENS', 1500),
     ],
 
     'deepseek' => [
@@ -50,7 +50,7 @@ return [
         'base_url' => env('DEEPSEEK_BASE_URL', 'https://api.deepseek.com/v1'),
         'timeout' => (int) env('DEEPSEEK_TIMEOUT', 30),
         'temperature' => (float) env('DEEPSEEK_TEMPERATURE', 0.5),
-        'max_tokens' => (int) env('DEEPSEEK_MAX_TOKENS', 600),
+        'max_tokens' => (int) env('DEEPSEEK_MAX_TOKENS', 1500),
     ],
 
     'gemini' => [
@@ -66,7 +66,7 @@ return [
         'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta/openai'),
         'timeout' => (int) env('GEMINI_TIMEOUT', 30),
         'temperature' => (float) env('GEMINI_TEMPERATURE', 0.5),
-        'max_tokens' => (int) env('GEMINI_MAX_TOKENS', 600),
+        'max_tokens' => (int) env('GEMINI_MAX_TOKENS', 1500),
     ],
 
     'chatbot' => [

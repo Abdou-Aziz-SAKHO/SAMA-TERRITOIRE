@@ -48,6 +48,28 @@
                 <label for="mois">Mois</label>
                 <input type="month" name="mois" id="mois" value="{{ $mois }}" onchange="this.form.submit()">
             </div>
+            <div class="filter-group">
+                <label for="commune">Commune</label>
+                <select name="commune" id="commune" onchange="this.form.submit()">
+                    <option value="">Toutes les communes</option>
+                    @forelse($communesDispo as $dispo)
+                        <option value="{{ $dispo }}" {{ $commune === $dispo ? 'selected' : '' }}>{{ $dispo }}</option>
+                    @empty
+                        <option disabled>—</option>
+                    @endforelse
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="projet">Projet</label>
+                <select name="projet" id="projet" onchange="this.form.submit()">
+                    <option value="">Tous les projets</option>
+                    @forelse($projetsDispo as $dispo)
+                        <option value="{{ $dispo }}" {{ $projet === $dispo ? 'selected' : '' }}>{{ $dispo }}</option>
+                    @empty
+                        <option disabled>—</option>
+                    @endforelse
+                </select>
+            </div>
         </div>
     </form>
 
@@ -89,6 +111,12 @@
                     <td style="padding:10px 12px;">
                         <div style="font-weight:600; color:var(--text,#1a2d22);">{{ $c->nom ?: 'Anonyme' }}</div>
                         <div style="font-size:11px; color:var(--text-dim,#8aaa95);">{{ $c->email }}</div>
+                        @if($c->commune || $c->projet)
+                        <div style="font-size:11px; color:var(--text-dim,#8aaa95); margin-top:3px;">
+                            @if($c->commune)<span style="display:inline-block; background:#2e7fbb14; color:#2e7fbb; padding:1px 7px; border-radius:8px; margin-right:4px;"><i class="fa-solid fa-location-dot"></i> {{ $c->commune }}</span>@endif
+                            @if($c->projet)<span style="display:inline-block; background:#267a4714; color:#267a47; padding:1px 7px; border-radius:8px;">{{ $c->projet }}</span>@endif
+                        </div>
+                        @endif
                     </td>
                     <td style="padding:10px 12px;">
                         @if($c->type === 'plainte')
@@ -116,7 +144,7 @@
                         <div style="display:flex; gap:6px; justify-content:flex-end; flex-wrap:nowrap;">
                             {{-- Voir --}}
                             <button type="button" class="btn-action" title="Voir le détail"
-                                onclick="voirCommentaire({{ $c->id }}, '{{ addslashes($c->nom ?: 'Anonyme') }}', '{{ addslashes($c->email) }}', '{{ addslashes($c->type) }}', '{{ addslashes($c->statut) }}', '{{ addslashes($c->message) }}', '{{ $c->created_at->format('d/m/Y H:i') }}')">
+                                onclick="voirCommentaire({{ $c->id }}, '{{ addslashes($c->nom ?: 'Anonyme') }}', '{{ addslashes($c->email) }}', '{{ addslashes($c->type) }}', '{{ addslashes($c->statut) }}', '{{ addslashes($c->message) }}', '{{ $c->created_at->format('d/m/Y H:i') }}', '{{ addslashes($c->commune) }}', '{{ addslashes($c->projet) }}')">
                                 <i class="fa-solid fa-eye"></i>
                             </button>
                             {{-- Marquer lu --}}
@@ -187,8 +215,52 @@
 
     {{-- ═══ Pagination ═══ --}}
     @if($commentaires->hasPages())
-    <div style="margin-top:16px; text-align:center;">
-        {{ $commentaires->withQueryString()->links() }}
+    <div class="pagination-bar">
+        <div class="pagination-info">
+            Affichage de <strong>{{ $commentaires->firstItem() }}</strong> à <strong>{{ $commentaires->lastItem() }}</strong> sur <strong>{{ $commentaires->total() }}</strong> commentaire(s)
+        </div>
+
+        <nav class="pagination-nav" aria-label="Pagination">
+            {{-- Précédent --}}
+            @if($commentaires->onFirstPage())
+                <span class="page-item disabled" title="Page précédente"><i class="fa-solid fa-chevron-left"></i></span>
+            @else
+                <a class="page-item" href="{{ $commentaires->previousPageUrl() }}" title="Page précédente"><i class="fa-solid fa-chevron-left"></i></a>
+            @endif
+
+            {{-- Numéros de pages --}}
+            @php
+                $current = $commentaires->currentPage();
+                $last    = $commentaires->lastPage();
+                $start   = max(1, $current - 2);
+                $end     = min($last, $current + 2);
+            @endphp
+
+            @if($start > 1)
+                <a class="page-item" href="{{ $commentaires->url(1) }}">1</a>
+                @if($start > 2)<span class="page-item page-ellipsis">…</span>@endif
+            @endif
+
+            @for($i = $start; $i <= $end; $i++)
+                @if($i === $current)
+                    <span class="page-item active" aria-current="page">{{ $i }}</span>
+                @else
+                    <a class="page-item" href="{{ $commentaires->url($i) }}">{{ $i }}</a>
+                @endif
+            @endfor
+
+            @if($end < $last)
+                @if($end < $last - 1)<span class="page-item page-ellipsis">…</span>@endif
+                <a class="page-item" href="{{ $commentaires->url($last) }}">{{ $last }}</a>
+            @endif
+
+            {{-- Suivant --}}
+            @if($commentaires->hasMorePages())
+                <a class="page-item" href="{{ $commentaires->nextPageUrl() }}" title="Page suivante"><i class="fa-solid fa-chevron-right"></i></a>
+            @else
+                <span class="page-item disabled" title="Page suivante"><i class="fa-solid fa-chevron-right"></i></span>
+            @endif
+        </nav>
     </div>
     @endif
 
@@ -210,7 +282,7 @@
                     <div id="vc-nom" style="font-size:13px; font-weight:600; color:var(--text,#1a2d22);">—</div>
                 </div>
                 <div class="field-group">
-                    <label>Email</label>
+                    <label>Contact</label>
                     <div id="vc-email" style="font-size:13px; color:var(--text,#1a2d22);">—</div>
                 </div>
                 <div class="field-group">
@@ -224,6 +296,14 @@
                 <div class="field-group">
                     <label>Date</label>
                     <div id="vc-date" style="font-size:13px; color:var(--text,#1a2d22);">—</div>
+                </div>
+                <div class="field-group">
+                    <label>Commune</label>
+                    <div id="vc-commune" style="font-size:13px; color:var(--text,#1a2d22);">—</div>
+                </div>
+                <div class="field-group">
+                    <label>Projet concerné</label>
+                    <div id="vc-projet" style="font-size:13px; color:var(--text,#1a2d22);">—</div>
                 </div>
             </div>
             <div class="field-group">
@@ -250,7 +330,7 @@
     .btn-action-ok { border-color:#267a4740; background:#267a4711; }
     .btn-action-danger:hover { border-color:#c44030; color:#c44030; }
     .stats-filters { margin-bottom:16px; }
-    .stats-filters-inner { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; justify-content:center; max-width:620px; margin:0 auto; padding:10px 14px; background:var(--surface,#fff); border:1px solid var(--border,#e8efe9); border-radius:12px; box-shadow:0 1px 4px rgba(23,45,33,.05); }
+    .stats-filters-inner { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; justify-content:center; max-width:860px; margin:0 auto; padding:10px 14px; background:var(--surface,#fff); border:1px solid var(--border,#e8efe9); border-radius:12px; box-shadow:0 1px 4px rgba(23,45,33,.05); }
     .filter-group { display:flex; flex-direction:column; gap:4px; min-width:0; flex:1 1 140px; }
     .filter-group label { font-size:10px; font-weight:600; color:var(--text-dim,#8aaa95); text-transform:uppercase; letter-spacing:.3px; }
     .filter-group select { padding:7px 10px; font-size:12px; font-family:'DM Sans',sans-serif; border:1px solid var(--border,#e8efe9); border-radius:8px; background:var(--surface2,#f4f7f5); color:var(--text,#1a2d22); outline:none; width:100%; }
@@ -264,14 +344,47 @@
     .btn-export:hover:not(:disabled) { background:#1d5f39; }
     .btn-export:disabled { opacity:.4; cursor:not-allowed; box-shadow:none; }
     .export-check { width:16px; height:16px; accent-color:var(--primary,#267a47); cursor:pointer; }
+
+    /* ── Pagination ── */
+    .pagination-bar {
+        display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+        margin-top:18px; padding:12px 16px;
+        background:var(--surface,#fff); border:1px solid var(--border,#e8efe9); border-radius:12px;
+        box-shadow:0 1px 4px rgba(23,45,33,.05);
+    }
+    .pagination-info { font-size:12px; color:var(--text-dim,#8aaa95); }
+    .pagination-info strong { color:var(--text,#1a2d22); font-weight:700; }
+    .pagination-nav { display:flex; align-items:center; gap:6px; }
+    .page-item {
+        display:inline-flex; align-items:center; justify-content:center;
+        min-width:32px; height:32px; padding:0 8px;
+        font-size:12.5px; font-weight:600; font-family:'DM Sans',sans-serif;
+        color:var(--text,#1a2d22); text-decoration:none;
+        background:var(--surface2,#f4f7f5); border:1px solid var(--border,#e8efe9); border-radius:8px;
+        transition:.15s; cursor:pointer;
+    }
+    .page-item:hover:not(.active):not(.disabled):not(.page-ellipsis) {
+        border-color:var(--primary,#267a47); color:var(--primary,#267a47); background:#fff;
+    }
+    .page-item.active {
+        background:var(--primary,#267a47); border-color:var(--primary,#267a47);
+        color:#fff; box-shadow:0 2px 8px rgba(38,122,71,.25);
+    }
+    .page-item.disabled { opacity:.4; cursor:not-allowed; }
+    .page-ellipsis { border:none; background:transparent; cursor:default; }
+    @media (max-width:600px) {
+        .pagination-bar { justify-content:center; flex-direction:column; }
+    }
 </style>
 
 <script>
-function voirCommentaire(id, nom, email, type, statut, message, date) {
+function voirCommentaire(id, nom, email, type, statut, message, date, commune, projet) {
     document.getElementById('vc-nom').textContent = nom;
     document.getElementById('vc-email').textContent = email;
     document.getElementById('vc-message').textContent = message;
     document.getElementById('vc-date').textContent = date;
+    document.getElementById('vc-commune').textContent = commune || '—';
+    document.getElementById('vc-projet').textContent = projet || '—';
 
     var typeBadge = {
         plainte: '<span style="background:#c4403022; color:#c44030; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:600;">🔴 Plainte</span>',

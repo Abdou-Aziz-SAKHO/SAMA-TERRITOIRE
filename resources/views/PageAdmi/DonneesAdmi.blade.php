@@ -440,7 +440,7 @@
                         <tr style="background:var(--surface2); text-align:left;">
                             <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Nom</th>
                             <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Département</th>
-                            <th style="text-align:right; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Superficie</th>
+                            <th style="text-align:right; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Menages</th>
                             <th style="text-align:right; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Population</th>
                             <th style="text-align:center; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Actions</th>
                         </tr>
@@ -450,7 +450,7 @@
                             <tr style="border-bottom:1px solid var(--border2);">
                                 <td style="padding:12px 16px; font-weight:500; color:var(--text);">{{ $c->nom }}</td>
                                 <td style="padding:12px 16px; color:var(--text-dim);">{{ $c->departement->nom ?? '—' }}</td>
-                                <td style="padding:12px 16px; text-align:right; color:var(--text-dim);">{{ $c->superficie ?? '—' }}</td>
+                                <td style="padding:12px 16px; text-align:right; color:var(--text-dim);">{{ $c->nbre_menage ?? '—' }}</td>
                                 <td style="padding:12px 16px; text-align:right; color:var(--text-dim);">{{ $c->taille_population ?? '—' }}</td>
                                 <td style="padding:12px 16px; text-align:center;">
                                     <button type="button" class="btn-voir" data-entity="commune" data-id="{{ $c->id }}"
@@ -496,7 +496,7 @@
                         <tr style="background:var(--surface2); text-align:left;">
                             <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Nom</th>
                             <th style="text-align:left; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Commune</th>
-                            <th style="text-align:right; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Superficie</th>
+                            <th style="text-align:right; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Menages</th>
                             <th style="text-align:right; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Population</th>
                             <th style="text-align:center; padding:12px 16px; font-weight:600; color:var(--text-dim); font-size:11px; text-transform:uppercase;">Actions</th>
                         </tr>
@@ -506,7 +506,7 @@
                             <tr style="border-bottom:1px solid var(--border2);">
                                 <td style="padding:12px 16px; font-weight:500; color:var(--text);">{{ $l->nom }}</td>
                                 <td style="padding:12px 16px; color:var(--text-dim);">{{ $l->commune->nom ?? '—' }}</td>
-                                <td style="padding:12px 16px; text-align:right; color:var(--text-dim);">{{ $l->superficie ?? '—' }}</td>
+                                <td style="padding:12px 16px; text-align:right; color:var(--text-dim);">{{ $l->nbre_menage ?? '—' }}</td>
                                 <td style="padding:12px 16px; text-align:right; color:var(--text-dim);">{{ $l->taille_population ?? '—' }}</td>
                                 <td style="padding:12px 16px; text-align:center;">
                                     <button type="button" class="btn-voir" data-entity="localite" data-id="{{ $l->id }}"

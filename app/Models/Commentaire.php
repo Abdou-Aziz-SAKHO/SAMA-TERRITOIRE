@@ -15,6 +15,8 @@ class Commentaire extends Model
         'email',
         'actualite_id',
         'type',
+        'commune',
+        'projet',
     ];
 
     /**

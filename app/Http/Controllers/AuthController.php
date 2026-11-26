@@ -76,6 +76,19 @@ class AuthController extends Controller
         ]);
 
         if (Auth::attempt($auth)) {
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+
+            if ($user->isBloque()) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return back()->withErrors([
+                    'email' => 'Votre compte a été bloqué.',
+                ])->onlyInput('email');
+            }
+
             $request->session()->regenerate();
             return redirect()->route('Dashboard');
         }

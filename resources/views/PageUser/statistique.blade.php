@@ -145,8 +145,8 @@
     {{-- ═══ Ligne 3 : population H/F + évolution ═══ --}}
     @if($populationHf->isNotEmpty())
     <div class="chart-card" style="margin-top:16px;">
-        <div class="chart-title">Population hommes / femmes par {{ strtolower($repartitionLabel ?: 'niveau') }}</div>
-        <div class="chart-sub">Données démographiques des {{ strtolower($repartitionLabel ?: 'niveaux') }} du périmètre</div>
+        <div class="chart-title">Population hommes / femmes par {{ strtolower($repartitionLabel ?: 'localité') }}</div>
+        <div class="chart-sub">Données démographiques des {{ strtolower($repartitionLabel ?: 'localités') }} du périmètre</div>
         <div class="chart-box" style="height:260px;"><canvas id="ch-hf"></canvas></div>
     </div>
     @endif
@@ -155,6 +155,90 @@
         <div class="chart-title">Évolution des infrastructures par année</div>
         <div class="chart-sub">Nombre de créations dans le périmètre</div>
         <div class="chart-box" style="height:260px;"><canvas id="ch-evol"></canvas></div>
+    </div>
+
+    {{-- ═══ Documents rattachés au périmètre choisi ═══ --}}
+    <div class="chart-card" style="margin-top:16px;">
+        <div class="chart-title">
+            <i class="fa-solid fa-folder-open" style="color:var(--primary,#267a47);"></i>
+            Documents — {{ $scopeLabel }}
+        </div>
+        <div class="chart-sub">
+            {{ $documents->count() }} document(s) rattaché(s) à ce périmètre (territoires et infrastructures)
+        </div>
+
+        @if($documents->isNotEmpty())
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <thead>
+                        <tr>
+                            <th>Document</th>
+                            <th>Type</th>
+                            <th>Rattachement</th>
+                            <th>Date</th>
+                            <th style="text-align:center;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach($documents as $doc)
+                        @php
+                            $ext = strtolower($doc->extension ?: pathinfo($doc->nom_fichier ?? '', PATHINFO_EXTENSION));
+                            $icone = match ($ext) {
+                                'pdf' => 'fa-solid fa-file-pdf',
+                                'doc', 'docx' => 'fa-solid fa-file-word',
+                                'xls', 'xlsx' => 'fa-solid fa-file-excel',
+                                'csv' => 'fa-solid fa-file-csv',
+                                default => 'fa-solid fa-file',
+                            };
+                            $couleur = match ($ext) {
+                                'pdf' => '#c0392b',
+                                'doc', 'docx' => '#2471a3',
+                                'xls', 'xlsx' => '#1e8449',
+                                'csv' => '#7b4fba',
+                                default => 'var(--text-muted,#8aaa95)',
+                            };
+                            $taille = $doc->taille
+                                ? ($doc->taille >= 1048576
+                                    ? round($doc->taille / 1048576, 1).' Mo'
+                                    : round($doc->taille / 1024, 1).' Ko')
+                                : '-';
+                            $rattachement = $doc->infrastructure
+                                ? 'Infrastructure : '.$doc->infrastructure->nom
+                                : ($doc->localite
+                                    ? 'Localité : '.$doc->localite->nom
+                                    : ($doc->commune
+                                        ? 'Commune : '.$doc->commune->nom
+                                        : ($doc->departement
+                                            ? 'Département : '.$doc->departement->nom
+                                            : ($doc->region ? 'Région : '.$doc->region->nom : 'Global'))));
+                        @endphp
+                        <tr>
+                            <td>
+                                <span class="doc-name">
+                                    <span style="color:{{ $couleur }}; margin-right:8px;"><i class="{{ $icone }}"></i></span>
+                                    <span>
+                                        <span class="doc-titre">{{ $doc->titre }}</span>
+                                        <span class="doc-file">{{ $doc->nom_fichier ?? basename($doc->chemin_document) }} · {{ $taille }}</span>
+                                    </span>
+                                </span>
+                            </td>
+                            <td><span class="doc-badge">{{ $doc->type_document ?? 'document' }}</span></td>
+                            <td class="doc-ratt">{{ $rattachement }}</td>
+                            <td class="doc-date">{{ $doc->created_at?->format('d/m/Y') ?? '-' }}</td>
+                            <td>
+                                <div class="doc-actions">
+                                    <a href="{{ route('documents.preview', $doc) }}" target="_blank" rel="noopener" title="Voir le document"><i class="fa-solid fa-eye"></i></a>
+                                    <a href="{{ route('documents.download', $doc) }}" title="Télécharger le document"><i class="fa-solid fa-download"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <p class="docs-empty"><i class="fa-regular fa-folder-open"></i> Aucun document n'est rattaché à ce périmètre.</p>
+        @endif
     </div>
 
 </div>
@@ -385,5 +469,29 @@ document.addEventListener('DOMContentLoaded', function() {
     .btn-submit { display:inline-flex; align-items:center; gap:8px; padding:9px 18px; font-size:12.5px; font-weight:700; font-family:'DM Sans',sans-serif; color:#fff; background:var(--primary,#267a47); border:none; border-radius:8px; cursor:pointer; transition:.2s; }
     .btn-submit:hover { background:#1d5f39; }
     .sect-emoji { margin-right:4px; }
+
+    /* ── Documents rattachés au périmètre ── */
+    .docs-table-wrap { overflow-x:auto; margin-top:14px; }
+    .docs-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+    .docs-table thead th { text-align:left; padding:10px 12px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim,#8aaa95); border-bottom:1px solid var(--border,#e8efe9); white-space:nowrap; }
+    .docs-table tbody td { padding:12px; border-bottom:1px solid var(--border2,#f0f4f2); vertical-align:middle; color:var(--text,#1a2d22); }
+    .docs-table tbody tr:hover { background:var(--surface2,#f4f7f5); }
+    .doc-name { display:flex; align-items:center; min-width:200px; }
+    .doc-titre { display:block; font-weight:600; color:var(--text,#1a2d22); }
+    .doc-file { display:block; font-size:11px; color:var(--text-muted,#8aaa95); margin-top:2px; }
+    .doc-badge { display:inline-block; padding:2px 8px; border-radius:999px; background:var(--surface2,#f4f7f5); border:1px solid var(--border,#e8efe9); font-size:10.5px; font-weight:600; text-transform:capitalize; color:var(--text-dim,#4a6555); }
+    .doc-ratt { color:var(--text-dim,#4a6555); max-width:240px; }
+    .doc-date { white-space:nowrap; color:var(--text-dim,#4a6555); }
+    .doc-actions { display:flex; gap:8px; justify-content:center; }
+    .doc-actions a { width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--border,#e8efe9); border-radius:8px; background:var(--surface2,#f4f7f5); color:var(--primary,#267a47); text-decoration:none; transition:.2s; }
+    .doc-actions a:hover { background:var(--primary,#267a47); color:#fff; }
+    .docs-empty { margin:16px 0 4px; padding:18px; text-align:center; font-size:12.5px; color:var(--text-muted,#8aaa95); background:var(--surface2,#f4f7f5); border-radius:10px; }
+    @media (max-width:640px) {
+        .docs-table thead { display:none; }
+        .docs-table tbody td { display:block; padding:6px 12px; border-bottom:none; }
+        .docs-table tbody tr { display:block; padding:10px 0; border-bottom:1px solid var(--border2,#f0f4f2); }
+        .doc-ratt, .doc-date { font-size:11.5px; }
+        .doc-actions { justify-content:flex-start; }
+    }
 </style>
 @endsection

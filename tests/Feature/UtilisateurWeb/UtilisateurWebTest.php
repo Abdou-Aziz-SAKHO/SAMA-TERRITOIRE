@@ -127,6 +127,6 @@ it('la page affiche les boutique bloquer pour un super admin connecté', functio
         ->assertSee('Gestion des utilisateurs');
 });
 
-it('la page est accessible en lecture seule sans connexion', function () {
-    $this->get('/UtilisateursAdmi')->assertSee('Gestion des utilisateurs');
+it('la page redirige vers la connexion sans authentification', function () {
+    $this->get('/UtilisateursAdmi')->assertRedirect('/login');
 });

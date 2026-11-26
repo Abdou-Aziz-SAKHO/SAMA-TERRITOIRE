@@ -296,17 +296,15 @@ class StatsAdmiController extends Controller
 
         // ___ Population hommes / femmes par sous-unité (graphe empilé) ___
         // global → régions ; région → départements ; département → communes ;
-        // commune → localités ; localité → aucun (un seul enregistrement).
-        if ($niveau === 'commune') {
+        // commune → localités ; localité → la localité choisie.
+        if ($niveau === 'commune' || $niveau === 'localite') {
             $hfRows = Localite::whereIn('id', $scope['localites'])->get(['id', 'nom', 'nbre_homme', 'nbre_femme']);
         } elseif ($niveau === 'departement') {
             $hfRows = Commune::whereIn('id', $scope['communes'])->get(['id', 'nom', 'nbre_homme', 'nbre_femme']);
         } elseif ($niveau === 'region') {
             $hfRows = Departement::whereIn('id', $scope['depts'])->get(['id', 'nom', 'nbre_homme', 'nbre_femme']);
-        } elseif ($niveau === null) {
-            $hfRows = Region::whereIn('id', $scope['regions'])->get(['id', 'nom', 'nbre_homme', 'nbre_femme']);
         } else {
-            $hfRows = collect();
+            $hfRows = Region::whereIn('id', $scope['regions'])->get(['id', 'nom', 'nbre_homme', 'nbre_femme']);
         }
         $populationHf = $hfRows
             ->map(fn ($r) => ['nom' => $r->nom, 'hommes' => (int) $r->nbre_homme, 'femmes' => (int) $r->nbre_femme])
@@ -319,6 +317,63 @@ class StatsAdmiController extends Controller
             ->map(fn ($c, $y) => ['annee' => (int) $y, 'total' => $c])
             ->sortBy('annee')->values();
 
+        // ── Documents rattachés au périmètre (territoire ou infrastructures) ──
+        // On inclut les documents du niveau choisi et de ses niveaux parents
+        // (ex. un document régional reste visible pour une commune de la région).
+        $documentsQuery = Document::query()
+            ->with(['region', 'departement', 'commune', 'localite', 'infrastructure']);
+
+        if ($niveau !== null) {
+            $docRegions = collect();
+            $docDepts = collect();
+            $docCommunes = collect();
+            $docLocalites = collect();
+
+            if ($niveau === 'region') {
+                $docRegions = $entiteId ? collect([$entiteId]) : Region::pluck('id');
+                $docDepts = Departement::whereIn('region_id', $docRegions)->pluck('id');
+                $docCommunes = Commune::whereIn('departement_id', $docDepts)->pluck('id');
+                $docLocalites = Localite::whereIn('commune_id', $docCommunes)->pluck('id');
+            } elseif ($niveau === 'departement') {
+                $docDepts = $entiteId ? collect([$entiteId]) : Departement::pluck('id');
+                $docRegions = Departement::whereIn('id', $docDepts)->pluck('region_id');
+                $docCommunes = Commune::whereIn('departement_id', $docDepts)->pluck('id');
+                $docLocalites = Localite::whereIn('commune_id', $docCommunes)->pluck('id');
+            } elseif ($niveau === 'commune') {
+                $docCommunes = $entiteId ? collect([$entiteId]) : Commune::pluck('id');
+                $docDepts = Commune::whereIn('id', $docCommunes)->pluck('departement_id')->unique()->values();
+                $docRegions = Departement::whereIn('id', $docDepts)->pluck('region_id');
+                $docLocalites = Localite::whereIn('commune_id', $docCommunes)->pluck('id');
+            } else { // localite
+                $docLocalites = $entiteId ? collect([$entiteId]) : Localite::pluck('id');
+                $docCommunes = Localite::whereIn('id', $docLocalites)->pluck('commune_id')->unique()->values();
+                $docDepts = Commune::whereIn('id', $docCommunes)->pluck('departement_id')->unique()->values();
+                $docRegions = Departement::whereIn('id', $docDepts)->pluck('region_id');
+            }
+
+            $docInfraIds = Infrastructure::query()
+                ->where(function ($q) use ($docDepts, $docCommunes, $docLocalites) {
+                    $q->whereIn('departement_id', $docDepts)
+                        ->orWhereIn('commune_id', $docCommunes);
+                    if ($docLocalites->isNotEmpty()) {
+                        $q->orWhereHas('localitesCouvertes', fn ($qq) => $qq->whereIn('localite_id', $docLocalites));
+                    }
+                })
+                ->pluck('id');
+
+            $documentsQuery->where(function ($q) use ($docRegions, $docDepts, $docCommunes, $docLocalites, $docInfraIds) {
+                $q->whereIn('region_id', $docRegions)
+                    ->orWhereIn('departement_id', $docDepts)
+                    ->orWhereIn('commune_id', $docCommunes)
+                    ->orWhereIn('localite_id', $docLocalites);
+                if ($docInfraIds->isNotEmpty()) {
+                    $q->orWhereIn('infrastructure_id', $docInfraIds);
+                }
+            });
+        }
+
+        $documents = $documentsQuery->orderByDesc('created_at')->get();
+
         return compact(
             'regions', 'regionDepts', 'communes', 'localites', 'secteurs',
             'niveau', 'entiteId', 'secteurId', 'scopeLabel',
@@ -326,7 +381,7 @@ class StatsAdmiController extends Controller
             'popTotale', 'menages',
             'nbRegions', 'nbDepts', 'nbCommunes', 'nbLocalites',
             'cascade', 'repartition', 'repartitionLabel', 'topUnits', 'populationHf',
-            'parSecteur', 'secteursDetail', 'parEtat', 'evolution'
+            'parSecteur', 'secteursDetail', 'parEtat', 'evolution', 'documents'
         );
     }
 
@@ -347,23 +402,24 @@ class StatsAdmiController extends Controller
         if ($niveau === 'region') {
             $regions = $entiteId ? collect([$entiteId]) : $regions;
             $depts = Departement::whereIn('region_id', $regions)->pluck('id');
+            $communes = Commune::whereIn('departement_id', $depts)->pluck('id');
+            $localites = Localite::whereIn('commune_id', $communes)->pluck('id');
         } elseif ($niveau === 'departement') {
             $depts = $entiteId ? collect([$entiteId]) : $depts;
             $regions = Departement::whereIn('id', $depts)->pluck('region_id');
+            $communes = Commune::whereIn('departement_id', $depts)->pluck('id');
+            $localites = Localite::whereIn('commune_id', $communes)->pluck('id');
         } elseif ($niveau === 'commune') {
             $communes = $entiteId ? collect([$entiteId]) : $communes;
             $depts = Commune::whereIn('id', $communes)->pluck('departement_id')->unique()->values();
             $regions = Departement::whereIn('id', $depts)->pluck('region_id');
+            $localites = Localite::whereIn('commune_id', $communes)->pluck('id');
         } elseif ($niveau === 'localite') {
             $localites = $entiteId ? collect([$entiteId]) : $localites;
             $communes = Localite::whereIn('id', $localites)->pluck('commune_id')->unique()->values();
             $depts = Commune::whereIn('id', $communes)->pluck('departement_id')->unique()->values();
             $regions = Departement::whereIn('id', $depts)->pluck('region_id');
         }
-
-        // Dérivation descendante (communes / localités du périmètre)
-        $communes = Commune::whereIn('departement_id', $depts)->pluck('id');
-        $localites = Localite::whereIn('commune_id', $communes)->pluck('id');
 
         return compact('regions', 'depts', 'communes', 'localites');
     }

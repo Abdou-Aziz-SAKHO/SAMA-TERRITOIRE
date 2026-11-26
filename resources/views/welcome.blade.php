@@ -19,18 +19,22 @@
 
     <div class="hero-stack">
       <div class="hero-kpis-bar">
-        <div class="kpi-item"><div class="kpi-num" id="k-total">500</div><div class="kpi-lbl">Infrastructures</div></div>
-        <div class="kpi-item"><div class="kpi-num" id="k-villages">150</div><div class="kpi-lbl">Villages Recensés</div></div>
-        <div class="kpi-item"><div class="kpi-num" id="k-secteurs">8</div><div class="kpi-lbl">Secteurs d'activité</div></div>
-        <div class="kpi-item"><div class="kpi-num">2022</div><div class="kpi-lbl">Année de collecte</div></div>
+        <div class="kpi-item"><div class="kpi-num" id="k-total">721</div><div class="kpi-lbl">Infrastructures</div></div>
+        <div class="kpi-item"><div class="kpi-num" id="k-villages">1790</div><div class="kpi-lbl">Villages Recensés</div></div>
+        <div class="kpi-item"><div class="kpi-num" id="k-secteurs">12</div><div class="kpi-lbl">Secteurs d'activité</div></div>
+        <div class="kpi-item"><div class="kpi-num">2023</div><div class="kpi-lbl">Année de collecte</div></div>
       </div>
     </div>
   </div>
 
   {{-- ═══════════════════ PRÉSENTATION SAMA TERRITOIRE ═══════════════════ --}}
   <section class="intro-sama">
-    <div class="intro-sama-deco intro-sama-deco-l"></div>
-    <div class="intro-sama-deco intro-sama-deco-r"></div>
+    <div class="intro-sama-deco intro-sama-deco-l">
+      <img src="{{ asset('assets/img/Totem.png') }}" alt="" >
+    </div>
+    {{-- <div class="intro-sama-deco intro-sama-deco-r">
+      <img src="{{ asset('assets/img/Totem.png') }}" alt="" aria-hidden="true">
+    </div> --}}
     <div class="intro-sama-inner">
       <span class="intro-sama-kicker">Plateforme de données territoriales</span>
       <img class="intro-sama-logo" src="{{ asset('assets/img/TERRITOIRE-MONOGRAME.webp') }}" alt="SAMA TERRITOIRE">
@@ -104,6 +108,8 @@
           <li><i class="fa-solid fa-circle-check"></i> Aucun compte requis</li>
           <li><i class="fa-solid fa-circle-check"></i> Traitement par l'ARD Kaolack</li>
           <li><i class="fa-solid fa-circle-check"></i> Transmis aux Autorites consernees</li>
+          <li><i class="fa-solid fa-circle-check"></i> Vos Commentaires et Plaintes Sont Confidentielles </li>
+          <li><i class="fa-solid fa-circle-check"></i> Choisissez Une Commune ou Projet Pour Etre Plus Precis </li>
         </ul>
       </div>
 
@@ -129,14 +135,41 @@
 
         <div class="comment-territoire-row">
           <div class="comment-territoire-champ">
-            <label for="ct-nom">Nom <span style="font-weight:400;text-transform:none;letter-spacing:0">(optionnel: Si vous ne voulez pas vous identifier)</span></label>
+            <label for="ct-nom">Nom <span class="comment-territoire-opt">(optionnel — si vous ne souhaitez pas vous identifier)</span></label>
             <input type="text" id="ct-nom" name="nom" value="{{ old('nom') }}" maxlength="255" placeholder="Votre nom (optionnel)">
             @error('nom')<span class="comment-territoire-msg">{{ $message }}</span>@enderror
           </div>
           <div class="comment-territoire-champ">
-            <label for="ct-email">Adresse e-mail</label>
-            <input type="email" id="ct-email" name="email" value="{{ old('email') }}" maxlength="255" placeholder="vous@exemple.com" required>
+            <label for="ct-email">E-mail ou téléphone <span class="comment-territoire-opt">(Obligatoire et Confidentiel- Pour Vos Reponses  )</span></label>
+            <input type="text" id="ct-email" name="email" value="{{ old('email') }}" maxlength="255" placeholder="vous@exemple.com ou 77 123 45 67" required>
             @error('email')<span class="comment-territoire-msg">{{ $message }}</span>@enderror
+          </div>
+        </div>
+
+        <div class="comment-territoire-row">
+          <div class="comment-territoire-champ">
+            <label for="ct-commune">Commune<span class="comment-territoire-opt">(Optionnel)</span></label>
+            <select id="ct-commune" name="commune">
+              <option value="">— Sélectionnez une commune —</option>
+              @foreach(config('sama.communes') as $commune)
+                <option value="{{ $commune }}" @selected(old('commune') === $commune)>{{ $commune }}</option>
+              @endforeach
+            </select>
+            @error('commune')<span class="comment-territoire-msg">{{ $message }}</span>@enderror
+          </div>
+          <div class="comment-territoire-champ">
+            <label for="ct-projet">Projet concerné<span class="comment-territoire-opt">(Optionnel)</span></label>
+            <select id="ct-projet" name="projet">
+              <option value="">— Sélectionnez un projet —</option>
+              @foreach(config('sama.projets') as $projet)
+                <option value="{{ $projet }}" @selected(old('projet') === $projet)>{{ $projet }}</option>
+              @endforeach
+              <option value="autre" @selected(old('projet') === 'autre')>Autre…</option>
+            </select>
+            <input type="text" id="ct-projet-autre" name="projet_autre" value="{{ old('projet_autre') }}" maxlength="255" placeholder="Précisez le projet…" hidden>
+            @error('projet')
+              <span class="comment-territoire-msg">{{ $message }}</span>
+            @enderror
           </div>
         </div>
 
@@ -168,7 +201,7 @@
 <style>
   html { scroll-behavior:smooth; }
   /* ═══════════ PRÉSENTATION SAMA TERRITOIRE ═══════════ */
-  .intro-sama { position:relative; padding: 120px 24px 48px; overflow:hidden; background:#fdfefe; }
+  .intro-sama { position:relative; padding: 120px 24px 48px; overflow-x:clip; background:#fdfefe; }
   .intro-sama-inner { position:relative; max-width: 820px; margin: 0 auto; text-align: center; z-index:2; }
   .intro-sama-kicker,
   .comment-territoire .intro-sama-kicker {
@@ -193,27 +226,21 @@
   .intro-sama-pills i { color:var(--primary); }
   .intro-sama-pills span:nth-child(2) i { color:var(--blue); }
 
-  /* Décors : filigranes carte & données */
-  .intro-sama-deco { position:absolute; z-index:1; pointer-events:none; opacity:.5; }
-  .intro-sama-deco-l { left:-30px; top:20px; width:150px; height:150px; }
-  .intro-sama-deco-r { right:-30px; bottom:10px; width:180px; height:180px; }
-  .intro-sama-deco-l, .intro-sama-deco-r {
-    border:2px solid var(--border2); border-radius:16px;
-    background-image:
-      radial-gradient(circle at 30% 60%, var(--primary-lt) 0 3px, transparent 3.5px),
-      radial-gradient(circle at 70% 28%, var(--blue-lt) 0 3px, transparent 3.5px),
-      radial-gradient(circle at 80% 75%, var(--primary-lt) 0 3px, transparent 3.5px);
+  /* Décors : totem de Kaolack en filigrane latéral */
+.intro-sama-deco { position:absolute; z-index:1; pointer-events:none; }
+  .intro-sama-deco-l { left:-110px; bottom:-03px; width:250px; height:220px; }
+  .intro-sama-deco-r { right:-110px; bottom:-10px; width:250px; height:230px; }
+  .intro-sama-deco img {
+    width:100%; height:100%; object-fit:contain;
+    filter:none;
   }
-  .intro-sama-deco-l::before, .intro-sama-deco-r::before {
-    content:""; position:absolute; width:70%; height:1px; background:repeating-linear-gradient(90deg, var(--border2) 0 4px, transparent 4px 8px);
+  .intro-sama-deco-l img { transform:rotate(-1deg); }
+  .intro-sama-deco-r img { transform:scaleX(-1) rotate(1deg); }
+  @media (max-width:720px) {
+    .intro-sama-deco-l, .intro-sama-deco-r { filter:none; opacity:1; }
+    .intro-sama-deco-l { width:180px; height:180px; }
+    .intro-sama-deco-r { width:200px; height:200px; }
   }
-  .intro-sama-deco-l::before { left:15%; top:50%; }
-  .intro-sama-deco-r::before { right:15%; top:38%; }
-  .intro-sama-deco-l::after, .intro-sama-deco-r::after {
-    content:""; position:absolute; width:1px; height:60%; background:repeating-linear-gradient(180deg, var(--border2) 0 4px, transparent 4px 8px);
-  }
-  .intro-sama-deco-l::after { left:60%; top:10%; }
-  .intro-sama-deco-r::after { right:55%; top:20%; }
 
   /* ═══════════ COMMENTAIRES & PLAINTES ═══════════ */
   .comment-territoire { background:#f0f1ef; max-width:none; margin:0; padding:64px 24px; }
@@ -227,7 +254,9 @@
   .comment-territoire-form { display:grid; gap:14px; }
   .comment-territoire-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   .comment-territoire-champ { display:flex; flex-direction:column; gap:6px; }
+  .comment-territoire-row .comment-territoire-champ label { min-height:34px; }
   .comment-territoire-champ label { font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.4px; }
+  .comment-territoire-champ .comment-territoire-opt { display:block; font-size:10px; font-weight:400; color:var(--text-muted); text-transform:none; letter-spacing:0; line-height:1.35; margin-top:2px; }
   .comment-territoire-champ input,
   .comment-territoire-champ select,
   .comment-territoire-champ textarea {
@@ -451,6 +480,20 @@
         requestAnimationFrame(step);
       });
     }, 650);
+  });
+
+  /* Champ « Projet concerné » : affiche la saisie libre quand « Autre » est choisi */
+  document.addEventListener('DOMContentLoaded', function () {
+    var select = document.getElementById('ct-projet');
+    var autre = document.getElementById('ct-projet-autre');
+    if (!select || !autre) return;
+    function majAutre() {
+      var visible = select.value === 'autre';
+      autre.hidden = !visible;
+      if (visible) autre.required = false;
+    }
+    select.addEventListener('change', majAutre);
+    majAutre();
   });
 
   /* Soumission AJAX du formulaire Commentaires & Plaintes : écran immobile, succès affiché sur place */

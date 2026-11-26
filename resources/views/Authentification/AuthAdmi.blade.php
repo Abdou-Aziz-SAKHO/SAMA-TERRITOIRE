@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Connexion — SAMA TERRITOIRE</title>
+
+<link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+<link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
+<link rel="icon" type="image/png" sizes="48x48" href="{{ asset('favicon-48x48.png') }}">
+<link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon-64x64.png') }}">
+<link rel="icon" type="image/png" sizes="192x192" href="{{ asset('favicon-192x192.png') }}">
+<link rel="icon" type="image/png" sizes="512x512" href="{{ asset('favicon-512x512.png') }}">
+<link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
+
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
@@ -290,6 +300,19 @@
   .btn-submit:active{ transform: translateY(1px); }
   .btn-submit:focus-visible{ outline:2px solid var(--sand); outline-offset:3px; }
 
+  .back-home{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    margin-top:18px;
+    font-size:12.5px;
+    color: var(--sand);
+    text-decoration:none;
+    font-weight:500;
+  }
+  .back-home:hover{ text-decoration:underline; }
+
   .foot{
     margin-top:24px;
     font-size:12px;
@@ -411,6 +434,11 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
         </button>
       </form>
+
+      <a href="{{ url('/') }}" class="back-home">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 5l-7 7 7 7"/></svg>
+        Retour à l'accueil visiteur
+      </a>
 
       <p class="foot">Sama Territoire <span class="sep"></span> Espace Administration</p>
     </div>

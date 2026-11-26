@@ -145,8 +145,8 @@
     {{-- ═══ Ligne 3 : population H/F + évolution ═══ --}}
     @if($populationHf->isNotEmpty())
     <div class="chart-card" style="margin-top:16px;">
-        <div class="chart-title">Population hommes / femmes par {{ strtolower($repartitionLabel ?: 'niveau') }}</div>
-        <div class="chart-sub">Données démographiques des {{ strtolower($repartitionLabel ?: 'niveaux') }} du périmètre</div>
+        <div class="chart-title">Population hommes / femmes par {{ strtolower($repartitionLabel ?: 'localité') }}</div>
+        <div class="chart-sub">Données démographiques des {{ strtolower($repartitionLabel ?: 'localités') }} du périmètre</div>
         <div class="chart-box" style="height:260px;"><canvas id="ch-hf"></canvas></div>
     </div>
     @endif

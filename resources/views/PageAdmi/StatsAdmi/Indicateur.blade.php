@@ -123,6 +123,15 @@
         @endforeach
     </div>
 
+    @if($stats['totalMesures'] === 0)
+    <div class="chart-card" style="margin-top:16px; border-left:3px solid #c07b28;">
+        <div class="chart-sub" style="color:#8a5a12;">
+            <i class="fa-solid fa-circle-info" style="margin-right:6px;"></i>
+            Aucune valeur d'indicateur n'est encore enregistrée pour ce secteur. Saisissez-les dans <strong>Données → Infrastructures → Modifier</strong>, rubrique « Valeurs des indicateurs ».
+        </div>
+    </div>
+    @endif
+
     {{-- ═══ Grand tableau croisé : entités × indicateurs ═══ --}}
     <div class="chart-card" style="margin-top:16px;">
         <div class="chart-title">Valeurs du secteur par {{ $niveauLabels[$niveau] }}</div>
@@ -145,7 +154,7 @@
                         <td>{{ $row['nom'] }}</td>
                         <td class="num">{{ $row['nb'] }}</td>
                         @foreach($secteur->indicateurs as $ind)
-                            <td class="num">{{ isset($row['vals'][$ind->id]) ? $fmt($row['vals'][$ind->id]) : '<span class="cell-empty">—</span>' }}</td>
+                            <td class="num">@if(isset($row['vals'][$ind->id])){{ $fmt($row['vals'][$ind->id]) }}@else<span class="cell-empty">—</span>@endif</td>
                         @endforeach
                     </tr>
                     @endforeach
@@ -156,7 +165,7 @@
                         <td>TOTAL</td>
                         <td class="num">{{ $totRow['nb'] }}</td>
                         @foreach($secteur->indicateurs as $ind)
-                            <td class="num">{{ isset($totRow['vals'][$ind->id]) ? $fmt($totRow['vals'][$ind->id]) : '<span class="cell-empty">—</span>' }}</td>
+                            <td class="num">@if(isset($totRow['vals'][$ind->id])){{ $fmt($totRow['vals'][$ind->id]) }}@else<span class="cell-empty">—</span>@endif</td>
                         @endforeach
                     </tr>
                 </tfoot>
@@ -190,7 +199,7 @@
                         <td>{{ $row['nom'] }}</td>
                         <td class="num">{{ $row['nb'] }}</td>
                         @foreach($secteur->indicateurs as $ind)
-                            <td class="num">{{ isset($row['vals'][$ind->id]) ? $fmt($row['vals'][$ind->id]) : '<span class="cell-empty">—</span>' }}</td>
+                            <td class="num">@if(isset($row['vals'][$ind->id])){{ $fmt($row['vals'][$ind->id]) }}@else<span class="cell-empty">—</span>@endif</td>
                         @endforeach
                     </tr>
                     @endforeach
@@ -201,7 +210,7 @@
                         <td>TOTAL</td>
                         <td class="num">{{ $totTypes['nb'] }}</td>
                         @foreach($secteur->indicateurs as $ind)
-                            <td class="num">{{ isset($totTypes['vals'][$ind->id]) ? $fmt($totTypes['vals'][$ind->id]) : '<span class="cell-empty">—</span>' }}</td>
+                            <td class="num">@if(isset($totTypes['vals'][$ind->id])){{ $fmt($totTypes['vals'][$ind->id]) }}@else<span class="cell-empty">—</span>@endif</td>
                         @endforeach
                     </tr>
                 </tfoot>
